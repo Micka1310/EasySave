@@ -2,6 +2,7 @@
 
 using WorkListFile;
 using WorkFile;
+using LanguageFile;
 
 // Interface for creating strategies
 public interface IStrategy
@@ -18,12 +19,13 @@ public interface IStrategy
 public class DisplayWork1 : IStrategy
 {
     // Attributes
-    public string option { get; } = "Afficher les travaux";
-    public List<string> parameterMessage { get; } = [];
+    public string option => Language.GetInstance().GetString("option_display");
+    public List<string> parameterMessage => [];
 
     // Methods
     public string Execution(List<string> parameters, WorkList workList)
     {
+        Language lang = Language.GetInstance();
         string displayString = "";
         int index = 0;
 
@@ -32,7 +34,12 @@ public class DisplayWork1 : IStrategy
         foreach (Work elem in WorkList)
         {
             index = index + 1;
-            displayString = displayString + $"Travaux n°{index} :\n" + "- Nom du fichier : " + elem.GetName() + "\n- Répertoire source : " + elem.GetSourceDirectory() + "\n- Répertoire destination : " + elem.GetDestinationDirectory() + "\n- Type de sauvegarde : " + elem.GetWorkType() + "\n\n ";
+            displayString = displayString
+                + lang.GetString("display_work_title") + $"{index} :\n"
+                + lang.GetString("display_file_name") + elem.GetName() + "\n"
+                + lang.GetString("display_source") + elem.GetSourceDirectory() + "\n"
+                + lang.GetString("display_destination") + elem.GetDestinationDirectory() + "\n"
+                + lang.GetString("display_type") + elem.GetWorkType() + "\n\n ";
         }
 
         return displayString;
@@ -43,15 +50,20 @@ public class DisplayWork1 : IStrategy
 public class CreateWork2 : IStrategy
 {
     // Attributes
-    public string option { get; set; } = "Créer un nouveau travaux";
-    public List<string> parameterMessage { get; set; } = ["Saisissez un nom de fichier :", "Saisissez le répertoire source :","Saisissez le répertoire de destination :","Choisissez le type du fichier : \n1. Complet\n2. Différentielle"];
+    public string option => Language.GetInstance().GetString("option_create");
+    public List<string> parameterMessage => [
+        Language.GetInstance().GetString("create_name"),
+        Language.GetInstance().GetString("create_source"),
+        Language.GetInstance().GetString("create_destination"),
+        Language.GetInstance().GetString("create_type")
+    ];
 
     // Methods
     public string Execution(List<string> parameters, WorkList workList)
     {
         workList.AddWork(parameters);
 
-        return "Travaux sauvegardé";
+        return Language.GetInstance().GetString("work_saved");
     }
 }
 
@@ -59,8 +71,10 @@ public class CreateWork2 : IStrategy
 public class ExecuteWork3 : IStrategy
 {
     // Attributes
-    public string option { get; set; } = "Exécuter un travaux";
-    public List<string> parameterMessage { get; set; } = ["Saisissez une ligne de commande pour exécuter le(les) travaux de votre(vos) choix :"];
+    public string option => Language.GetInstance().GetString("option_execute");
+    public List<string> parameterMessage => [
+        Language.GetInstance().GetString("execute_input")
+    ];
 
     // Methods
     public string Execution(List<string> parameters, WorkList workList)
@@ -75,14 +89,26 @@ public class ExecuteWork3 : IStrategy
 public class ChangeLanguage4 : IStrategy
 {
     // Attributes
-    public string option { get; set; } = "Changer la langue";
-    public List<string> parameterMessage { get; set; } = ["Choisissez la langue : \n1. FR\n2. EN"];
+    public string option => Language.GetInstance().GetString("option_language");
+    public List<string> parameterMessage => [
+        Language.GetInstance().GetString("language_choice")
+    ];
 
     // Methods
     public string Execution(List<string> parameters, WorkList workList)
     {
-        // Waiting for the others to commit their works...
+        Language lang = Language.GetInstance();
 
-        return "";
+        switch (parameters[0])
+        {
+            case "1":
+                lang.SetLanguage(Lang.FR);
+                return lang.GetString("language_changed");
+            case "2":
+                lang.SetLanguage(Lang.EN);
+                return lang.GetString("language_changed");
+            default:
+                return lang.GetString("invalid_option");
+        }
     }
 }
