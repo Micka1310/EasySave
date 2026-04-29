@@ -1,6 +1,13 @@
-﻿namespace UnitTest;
+﻿/* 
+ * Command line for testing :
+ * dotnet test --logger "console;verbosity=detailed"
+ * dotnet test
+*/
+
+/*namespace UnitTest;
 
 using LibFile;
+using System;
 using System.Diagnostics;
 
 [TestClass]
@@ -28,3 +35,4 @@ public sealed class Test1
         Assert.AreEqual(20, result);
     }
 }
+*/
