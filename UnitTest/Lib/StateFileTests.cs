@@ -71,7 +71,7 @@ public class StateFileTests
 
         // Assert
         string content = File.ReadAllText(filePath);
-        Assert.IsTrue(content.Contains("WorkA"), "state.json doit contenir WorkA.");
-        Assert.IsTrue(content.Contains("WorkB"), "state.json doit contenir WorkB.");
+        Assert.Contains("WorkA", content);
+        Assert.Contains("WorkB", content);
     }
 }

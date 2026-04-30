@@ -35,8 +35,8 @@ public class LogFileTests
 
         // Assert
         string content = File.ReadAllText(filePath);
-        Assert.IsTrue(content.Contains("Work1"), "Le fichier log doit contenir la première entrée.");
-        Assert.IsTrue(content.Contains("Work2"), "Le fichier log doit contenir la deuxième entrée.");
+        Assert.Contains("Work1", content);
+        Assert.Contains("Work2", content);
     }
 
     // Test : un temps de transfert négatif est accepté (indique une erreur)
