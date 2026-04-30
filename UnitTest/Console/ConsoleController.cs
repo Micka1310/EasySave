@@ -75,6 +75,82 @@ public sealed class TestConsoleStrategy
         StringAssert.Contains(displayResult, "C:\\source1");
         StringAssert.Contains(displayResult, "C:\\dest2");
     }
+
+    [TestMethod]
+    public void DisplayOption_EmptyList_ReturnsEmptyString()
+    {
+        Controller controller = new();
+
+        string result = controller.OptionExecuted(1, []);
+
+        Assert.AreEqual("", result);
+    }
+
+    [TestMethod]
+    public void GetOption_InEnglish_ReturnsEnglishOptions()
+    {
+        Language.GetInstance().SetLanguage(Lang.EN);
+        Controller controller = new();
+
+        List<string> options = controller.GetOption();
+
+        Assert.HasCount(4, options);
+        Assert.AreEqual("Display works", options[0]);
+        Assert.AreEqual("Create a new work", options[1]);
+        Assert.AreEqual("Execute a work", options[2]);
+        Assert.AreEqual("Change language", options[3]);
+    }
+
+    [TestMethod]
+    public void GetParameter_Option2_InEnglish_ReturnsEnglishMessages()
+    {
+        Language.GetInstance().SetLanguage(Lang.EN);
+        Controller controller = new();
+
+        List<string> parameters = controller.GetParameterMessage(2);
+
+        Assert.HasCount(4, parameters);
+        StringAssert.Contains(parameters[0], "name");
+        StringAssert.Contains(parameters[1], "source");
+        StringAssert.Contains(parameters[2], "destination");
+        StringAssert.Contains(parameters[3], "type");
+    }
+
+    [TestMethod]
+    public void ExecuteOption_CreateAndDisplay_InEnglish()
+    {
+        Language.GetInstance().SetLanguage(Lang.EN);
+        Controller controller = new();
+
+        string createResult = controller.OptionExecuted(2, ["myFile", "C:\\src", "C:\\dst", "Full"]);
+        Assert.AreEqual("Work saved", createResult);
+
+        string displayResult = controller.OptionExecuted(1, []);
+        StringAssert.Contains(displayResult, "myFile");
+        StringAssert.Contains(displayResult, "File name");
+        StringAssert.Contains(displayResult, "Source directory");
+    }
+
+    [TestMethod]
+    public void ExecuteOption3_ReturnsEmptyString()
+    {
+        Controller controller = new();
+
+        string result = controller.OptionExecuted(3, ["1"]);
+
+        Assert.AreEqual("", result);
+    }
+
+    [TestMethod]
+    public void ChangeLanguage_ToFR_WhenAlreadyFR()
+    {
+        Controller controller = new();
+
+        string result = controller.OptionExecuted(4, ["1"]);
+
+        Assert.AreEqual("Langue changée en Français", result);
+        Assert.AreEqual(Lang.FR, Language.GetInstance().GetCurrentLanguage());
+    }
 }
 
 [TestClass]
