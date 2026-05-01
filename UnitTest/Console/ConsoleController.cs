@@ -6,6 +6,7 @@
 
 using ControllerFile;
 using LanguageFile;
+using System.Diagnostics;
 
 [TestClass]
 [DoNotParallelize]
@@ -17,10 +18,57 @@ public sealed class TestConsoleStrategy
         Language.Reset();
     }
 
+    private void DisplayMenu(Controller controller)
+    {
+        Language lang = Language.GetInstance();
+        List<string> options = controller.GetOption();
+
+        Trace.WriteLine("========================================");
+        Trace.WriteLine("            EasySave Console");
+        Trace.WriteLine("========================================");
+        Trace.WriteLine(lang.GetString("menu_title"));
+        Trace.WriteLine("");
+
+        int index = 1;
+        foreach (string option in options)
+        {
+            Trace.WriteLine($"  {index}. {option}");
+            index++;
+        }
+
+        Trace.WriteLine("");
+    }
+
+    private void DisplayParameterPrompts(Controller controller, int option)
+    {
+        List<string> parameters = controller.GetParameterMessage(option);
+
+        foreach (string param in parameters)
+        {
+            Trace.WriteLine($"> {param}");
+        }
+    }
+
+    private void DisplayResult(string result)
+    {
+        if (result != "")
+        {
+            Trace.WriteLine("");
+            Trace.WriteLine(result);
+        }
+
+        Trace.WriteLine("----------------------------------------");
+        Trace.WriteLine("");
+    }
+
     [TestMethod]
     public void GetOption_ReturnsAllOptions()
     {
         Controller controller = new();
+
+        Trace.WriteLine("[TEST] Affichage du menu principal (FR)");
+        DisplayMenu(controller);
+
         List<string> options = controller.GetOption();
 
         Assert.HasCount(4, options);
@@ -34,6 +82,13 @@ public sealed class TestConsoleStrategy
     public void GetParameter_Option2_Returns4Messages()
     {
         Controller controller = new();
+
+        Trace.WriteLine("[TEST] Prompts de saisie pour Option 2 : Creer un travail (FR)");
+        DisplayMenu(controller);
+        Trace.WriteLine("Utilisateur choisit : 2");
+        Trace.WriteLine("");
+        DisplayParameterPrompts(controller, 2);
+
         List<string> parameters = controller.GetParameterMessage(2);
 
         Assert.HasCount(4, parameters);
@@ -47,6 +102,13 @@ public sealed class TestConsoleStrategy
     public void GetParameter_Option4_Returns1Message()
     {
         Controller controller = new();
+
+        Trace.WriteLine("[TEST] Prompts de saisie pour Option 4 : Changer la langue (FR)");
+        DisplayMenu(controller);
+        Trace.WriteLine("Utilisateur choisit : 4");
+        Trace.WriteLine("");
+        DisplayParameterPrompts(controller, 4);
+
         List<string> parameters = controller.GetParameterMessage(4);
 
         Assert.HasCount(1, parameters);
@@ -59,16 +121,41 @@ public sealed class TestConsoleStrategy
     {
         Controller controller = new();
 
-        List<string> param1 = ["fichier1", "C:\\source1", "C:\\dest1", "Complet"];
-        List<string> param2 = ["fichier2", "C:\\source2", "C:\\dest2", "Différentielle"];
+        Trace.WriteLine("[TEST] Scenario complet : creer 2 travaux puis les afficher (FR)");
+        Trace.WriteLine("");
 
-        string createResult1 = controller.OptionExecuted(2, param1);
-        string createResult2 = controller.OptionExecuted(2, param2);
+        // Création travail 1
+        DisplayMenu(controller);
+        Trace.WriteLine("Utilisateur choisit : 2");
+        Trace.WriteLine("");
+        DisplayParameterPrompts(controller, 2);
+        Trace.WriteLine("  -> fichier1");
+        Trace.WriteLine("  -> C:\\source1");
+        Trace.WriteLine("  -> C:\\dest1");
+        Trace.WriteLine("  -> Complet");
+        string createResult1 = controller.OptionExecuted(2, ["fichier1", "C:\\source1", "C:\\dest1", "Complet"]);
+        DisplayResult(createResult1);
+
+        // Création travail 2
+        DisplayMenu(controller);
+        Trace.WriteLine("Utilisateur choisit : 2");
+        Trace.WriteLine("");
+        DisplayParameterPrompts(controller, 2);
+        Trace.WriteLine("  -> fichier2");
+        Trace.WriteLine("  -> C:\\source2");
+        Trace.WriteLine("  -> C:\\dest2");
+        Trace.WriteLine("  -> Différentielle");
+        string createResult2 = controller.OptionExecuted(2, ["fichier2", "C:\\source2", "C:\\dest2", "Différentielle"]);
+        DisplayResult(createResult2);
 
         Assert.AreEqual("Travaux sauvegardé", createResult1);
         Assert.AreEqual("Travaux sauvegardé", createResult2);
 
+        // Affichage des travaux
+        DisplayMenu(controller);
+        Trace.WriteLine("Utilisateur choisit : 1");
         string displayResult = controller.OptionExecuted(1, []);
+        DisplayResult(displayResult);
 
         StringAssert.Contains(displayResult, "fichier1");
         StringAssert.Contains(displayResult, "fichier2");
@@ -81,7 +168,11 @@ public sealed class TestConsoleStrategy
     {
         Controller controller = new();
 
+        Trace.WriteLine("[TEST] Affichage des travaux quand la liste est vide (FR)");
+        DisplayMenu(controller);
+        Trace.WriteLine("Utilisateur choisit : 1");
         string result = controller.OptionExecuted(1, []);
+        DisplayResult(result);
 
         Assert.AreEqual("", result);
     }
@@ -91,6 +182,9 @@ public sealed class TestConsoleStrategy
     {
         Language.GetInstance().SetLanguage(Lang.EN);
         Controller controller = new();
+
+        Trace.WriteLine("[TEST] Affichage du menu principal (EN)");
+        DisplayMenu(controller);
 
         List<string> options = controller.GetOption();
 
@@ -107,6 +201,12 @@ public sealed class TestConsoleStrategy
         Language.GetInstance().SetLanguage(Lang.EN);
         Controller controller = new();
 
+        Trace.WriteLine("[TEST] Prompts de saisie pour Option 2 : Create a new work (EN)");
+        DisplayMenu(controller);
+        Trace.WriteLine("User selects: 2");
+        Trace.WriteLine("");
+        DisplayParameterPrompts(controller, 2);
+
         List<string> parameters = controller.GetParameterMessage(2);
 
         Assert.HasCount(4, parameters);
@@ -122,10 +222,29 @@ public sealed class TestConsoleStrategy
         Language.GetInstance().SetLanguage(Lang.EN);
         Controller controller = new();
 
+        Trace.WriteLine("[TEST] Scenario complet en anglais : creer 1 travail puis afficher (EN)");
+        Trace.WriteLine("");
+
+        // Création
+        DisplayMenu(controller);
+        Trace.WriteLine("User selects: 2");
+        Trace.WriteLine("");
+        DisplayParameterPrompts(controller, 2);
+        Trace.WriteLine("  -> myFile");
+        Trace.WriteLine("  -> C:\\src");
+        Trace.WriteLine("  -> C:\\dst");
+        Trace.WriteLine("  -> Full");
         string createResult = controller.OptionExecuted(2, ["myFile", "C:\\src", "C:\\dst", "Full"]);
+        DisplayResult(createResult);
+
         Assert.AreEqual("Work saved", createResult);
 
+        // Affichage
+        DisplayMenu(controller);
+        Trace.WriteLine("User selects: 1");
         string displayResult = controller.OptionExecuted(1, []);
+        DisplayResult(displayResult);
+
         StringAssert.Contains(displayResult, "myFile");
         StringAssert.Contains(displayResult, "File name");
         StringAssert.Contains(displayResult, "Source directory");
@@ -136,7 +255,14 @@ public sealed class TestConsoleStrategy
     {
         Controller controller = new();
 
+        Trace.WriteLine("[TEST] Execution Option 3 : Executer un travail (FR)");
+        DisplayMenu(controller);
+        Trace.WriteLine("Utilisateur choisit : 3");
+        Trace.WriteLine("");
+        DisplayParameterPrompts(controller, 3);
+        Trace.WriteLine("  -> 1");
         string result = controller.OptionExecuted(3, ["1"]);
+        DisplayResult(result);
 
         Assert.AreEqual("true", result);
     }
@@ -146,10 +272,48 @@ public sealed class TestConsoleStrategy
     {
         Controller controller = new();
 
+        Trace.WriteLine("[TEST] Changement de langue FR -> FR (FR)");
+        DisplayMenu(controller);
+        Trace.WriteLine("Utilisateur choisit : 4");
+        Trace.WriteLine("");
+        DisplayParameterPrompts(controller, 4);
+        Trace.WriteLine("  -> 1");
         string result = controller.OptionExecuted(4, ["1"]);
+        DisplayResult(result);
 
         Assert.AreEqual("Langue changée en Français", result);
         Assert.AreEqual(Lang.FR, Language.GetInstance().GetCurrentLanguage());
+    }
+
+    [TestMethod]
+    public void ChangeLanguage_FR_To_EN_FullFlow()
+    {
+        Controller controller = new();
+
+        Trace.WriteLine("[TEST] Scenario complet : changement FR -> EN puis affichage du menu");
+        Trace.WriteLine("");
+
+        // Menu en FR
+        Trace.WriteLine("--- Avant changement ---");
+        DisplayMenu(controller);
+
+        // Changement de langue
+        Trace.WriteLine("Utilisateur choisit : 4");
+        Trace.WriteLine("");
+        DisplayParameterPrompts(controller, 4);
+        Trace.WriteLine("  -> 2");
+        string result = controller.OptionExecuted(4, ["2"]);
+        DisplayResult(result);
+
+        Assert.AreEqual("Language changed to English", result);
+
+        // Menu en EN
+        Trace.WriteLine("--- Apres changement ---");
+        DisplayMenu(controller);
+
+        List<string> options = controller.GetOption();
+        Assert.AreEqual("Display works", options[0]);
+        Assert.AreEqual("Change language", options[3]);
     }
 }
 
