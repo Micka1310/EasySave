@@ -132,13 +132,13 @@ public sealed class TestConsoleStrategy
     }
 
     [TestMethod]
-    public void ExecuteOption3_ReturnsEmptyString()
+    public void ExecuteOption3_ReturnsResult()
     {
         Controller controller = new();
 
         string result = controller.OptionExecuted(3, ["1"]);
 
-        Assert.AreEqual("", result);
+        Assert.AreEqual("true", result);
     }
 
     [TestMethod]
