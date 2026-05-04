@@ -1,231 +1,244 @@
 # EasySave - Logiciel de sauvegarde ProSoft
 
-## Vision globale
+# Sommaire
+- [Vision globale](#vision-globale)
+- [Contexte et problématique](#contexte-et-problématique)
+- [Fonctionnalités attendues par version](#fonctionnalités-attendues-par-version)
+- [Pipeline de développement du dépôt](#pipeline-de-développement-du-dépôt)
+- [Quelque commandes utiles durant le développement](#quelque-commandes-utiles-durant-le-développement)
+- [Livrables à rendre](#livrables-à-rendre)
 
-EasySave est un logiciel de sauvegarde distribue par ProSoft, avec une evolution progressive en 4 versions :
+# Vision globale
+
+EasySave est un logiciel de sauvegarde distribué par ProSoft, avec une evolution progressive en 4 versions :
 
 - **v1.0** : base console complete
 - **v1.1** : extension de la v1.0 (format de log JSON/XML)
 - **v2.0** : passage en interface graphique + chiffrement + contrainte logiciel metier
 - **v3.0** : parallelisation, priorisation, pilotage temps reel et centralisation Docker
 
-Ce README decrit **toutes les fonctionnalites attendues du projet**, puis distingue l'etat reel du depot.
+Ce README decrit **toutes les fonctionnalités attendues du projet**, puis distingue l'état réel du dépôt.
 
-## 1) Contexte et problematique
+Outils utilisé durant ce projet : Visual Studio, GitHub, UML
+
+# Contexte et problématique
 
 Les clients ProSoft ont besoin d'un outil de sauvegarde :
-
-- fiable sur disque local, externe et lecteur reseau
+- fiable sur disque local, externe et lecteur réseau
 - utilisable en francais et en anglais
-- tracable en temps reel (etat + log)
-- maintenable et evolutif version apres version
+- tracable en temps réel (état + log)
+- maintenable et évolutif version apres version
 
-Le projet doit aussi repondre a des contraintes de qualite :
-
-- code lisible, peu duplique, facilement testable
-- architecture claire, orientee evolutions futures
+Le projet doit aussi répondre à ces contraintes de qualité :
+- code lisible, peu dupliqué, facilement testable
+- architecture claire, orientée évolutions futures
 - documentation utilisateur/support complete
-- gestion Git rigoureuse sur toute la duree du fil rouge
+- gestion Git rigoureuse sur toute la durée du fil rouge
 
-## 2) Calendrier projet (rappel)
+**L'objectif principal** de ce projet est donc d'utiliser de bonne pratiques de développement afin de réduire les coûts de développement des futures versions.
 
-- **Livrable 1 (v1.0)** : cahier des charges, UML, code + docs
-- **Livrable 2 (v1.1 + v2.0)** : UML, code + docs (non evalue mais structurant)
-- **Livrable 3 (v3.0)** : UML, code final, soutenance
+Cela nous permettra aussi de réagir rapidement à la remontée éventuelle d'un dysfonctionnement.
+Plusieurs versions sont donc développer pour ce projet.
 
-## 3) Fonctionnalites attendues par version
+# Fonctionnalités attendues par version
 
-### v1.0 - Console
+## v1.0 - Application console
 
-#### Fonctions metier
+### Technologies utilisées
 
-- application console .NET
-- creation jusqu'a 5 travaux de sauvegarde
-- un travail contient :
-  - nom du travail
-  - repertoire source
-  - repertoire cible
-  - type (`complete` ou `differentielle`)
-- execution :
-  - d'un seul travail
-  - de plusieurs travaux en sequence
-- execution via ligne de commande :
-  - `EasySave.exe 1-3`
-  - `EasySave.exe 1;3`
+Language utilisé : C#
 
-#### Compatibilite de stockage
+Framework de programmation logiciel utilisé : .NET 8 ou plus
 
-- disques locaux
-- disques externes
-- lecteurs reseau
+Moteur de test : MSTest
 
-#### Log journalier (obligatoire)
+### Fonctions metier
 
-- ecriture en temps reel des actions
-- informations minimales :
-  - horodatage
-  - nom du travail
-  - chemin complet source (UNC)
-  - chemin complet destination (UNC)
-  - taille du fichier
-  - temps de transfert en ms (negatif si erreur)
-- format JSON lisible (retours ligne/indentation)
-- cette brique doit etre dans une DLL dediee `EasyLog.dll`
+La **v1** est une application console.
 
-#### Fichier d'etat temps reel (obligatoire)
+La **v1** de l'application doit comprendre :
 
-- fichier unique de suivi de l'avancement
-- informations minimales par travail :
-  - nom du travail
-  - horodatage de la derniere action
-  - etat (`Active`, `Inactive`, etc.)
-  - nombre total de fichiers eligibles
-  - taille totale a transferer
-  - progression
-  - nombre de fichiers restants
-  - taille restante
-  - fichier source en cours
-  - fichier destination en cours
-- format JSON lisible (retours ligne/indentation)
+- un affichage console
+- une limite de création jusqu'a **5 travaux** de sauvegarde
+- un travail qui contient :
+  - un nom de travail
+  - le chemin du répertoire source
+  - le chemin du répertoire cible
+  - un type (`complete` ou `differentielle`)
+- une option pour éxecuter :
+  - un seul travail
+  - plusieurs travaux en séquence
+- l'éxecution via ligne de commande :
+  - Exemple 1 pour exécuter le travail 1 et 3 : `EasySave.exe 1-3`
+  - Exemple 2 pour exécuter les travaux de 1 à 3 : `EasySave.exe 1;3`
+- la possibilité de sauvegarder dans plusieurs type de stockage :
+  - disques locaux
+  - disques externes
+  - lecteurs reseau
+- l'écriture un **fichier log** unique avec :
+  - une écriture en temps réel des actions
+  - des informations minimales :
+    - horodatage
+    - nom du travail
+    - chemin complet source (UNC)
+    - chemin complet destination (UNC)
+    - taille du fichier
+    - temps de transfert en ms (negatif si erreur)
+  - un format JSON lisible (retours ligne/indentation)
+  - l'obligation dêtre implémenter dans une DLL dediée (Exemple : `EasyLog.dll`)
+- l'écriture dun **fichier détat** unique avec :
+  - les informations minimales par travail :
+  - le nom du travail
+  - l'horodatage de la dernière action
+  - l'état (`Active`, `Inactive`, etc.)
+  - le nombre total de fichiers eligibles
+  - la taille totale a transferer
+  - la progression
+  - le nombre de fichiers restants
+  - la taille restante
+  - le fichier source en cours
+  - le fichier destination en cours
+  - en format JSON lisible (retours ligne/indentation)
+ 
+### Architecture logique de lapplication
 
-### v1.1 - Console (retro-compatible v1.0)
+À partir de la racine du projet, nous avons :
+\\\\\\ À Compléter \\\\\
 
-- toutes les fonctions v1.0 conservees
-- nouveaute :
-  - choix du format du log journalier : **JSON ou XML**
-- objectif : satisfaire un client qui ne migre pas vers v2.0
+## v1.1 - Application Console (retro-compatible avec la v1.0)
 
-### v2.0 - Graphique
+La **v1.1** est une application console similaire à la v1 avec en plus la possibilité de choisir le format du fichier log journalier en JSON ou XML.
 
-#### Evolution d'interface
+La **v1.1** à pour but de satisfaire un client qui ne migre pas vers v2.0.
 
-- abandon du mode console principal
-- application graphique (WPF/Avalonia ou equivalent)
-- commandes de sauvegarde equivalentes a v1.0
+### Changement apporté
 
-#### Evolution metier
+Tous les préréquis de la **v1.0** conservés.
 
-- nombre de travaux de sauvegarde **illimite**
-- integration du logiciel externe **CryptoSoft**
-  - chiffrement uniquement pour les extensions configurees
-- log journalier enrichi :
-  - ajout du **temps de chiffrement** en ms
+La **v1.1** de lapplication a comme nouveauté :
+- la possibilité de choisir le format du log journalier : **JSON ou XML**
+
+### Architecture logique de lapplication
+
+À partir de la racine du projet, nous avons :
+\\\\\\ À Compléter \\\\\
+
+## v2.0 - Application graphique
+
+À partir de la v2, l'application passe dun **affichage console** à un **affichage graphique**.
+
+### Technologies utilisées
+
+Language utilisé : C#
+
+Framework de programmation logiciel utilisé : .NET 8 ou plus
+
+Moteur de test pour les tests unitaires : MSTest
+
+Framework utilisé pour l'affichage graphique : WPF
+
+### Changement apporté
+
+Le passage de la **v1.1** à la **v2.0** implique :
+- l'abandon de affichage console pour passer à laffichage graphique
+- un nombre de travaux de sauvegarde **illimité** au lieu de rester à 5 travaux maximum
+- une option de chiffrement et une autre pour le déchiffrement. Ces fonctinnalités doivent sappliquer uniquement pour les sauvegardes indiqué par lutilisateur.
+- le même log journalier enrichi qui comprend comme nouveauté :
+  - un ajout du **temps de chiffrement** en ms avec ces affichages :
     - `0` : pas de chiffrement
     - `>0` : chiffrement effectue
     - `<0` : erreur chiffrement
-- detection d'un logiciel metier :
-  - si detecte, lancement d'une sauvegarde interdit
-  - si sequence deja lancee, terminer le fichier en cours puis arreter
-  - l'arret doit etre journalise
+- une intégration dun logiciel métier au choix de lutilisateur
+- la détection du logiciel metier avec ces comportements :
+  - si detecté, on interdit le lancement de quelquonque sauvegarde.
+  - si une sauvegarde de séquence est déjà lancée, on termine le fichier en cours puis on arrête les prochaines sauvegarde
+- des commandes Play/Pause/Stop par travail sont demandees par les clients (non fonctionelle pour l'instant) pour la préparation à la **v3**
 
-#### Point important
+### Architecture logique de l'application
 
-- des commandes Play/Pause/Stop par travail sont demandees par les clients
-- non exigees en v2.0, mais doivent etre preparees pour v3.0
+À partir de la racine du projet, nous avons :
+\\\\\\ À Compléter \\\\\
 
-### v3.0 - Graphique avancee
+## v3.0 - Application graphique avancée
 
-#### Orchestration des sauvegardes
+Amélioration de l'application graphique avec gestion de processus intégré et isolation avec Docker.
 
-- abandon du mode purement sequentiel
-- execution des travaux **en parallele**
+### Technologies utilisées
 
-#### Regles de priorite
+Similaire à la **v2**
 
-- extensions prioritaires configurees dans les parametres
-- aucun fichier non prioritaire ne doit partir tant qu'il reste du prioritaire sur au moins un travail
+### Changement apporté
 
-#### Controle des gros transferts
-
-- interdiction de transferer en parallele 2 fichiers > `n` Ko
-- `n` configurable
-- pendant un gros transfert, les petits fichiers peuvent continuer (si regles priorite respectees)
-
-#### Pilotage temps reel utilisateur
-
-- commandes par travail ou globales :
-  - `Play` (demarrage/reprise)
-  - `Pause` (effective apres fichier en cours)
-  - `Stop` (arret immediat)
-- suivi de progression temps reel (au minimum pourcentage)
-
-#### Logiciel metier en cours d'execution
-
-- si detecte : mise en pause automatique de tous les travaux
-- reprise automatique quand le logiciel metier se ferme
-
-#### CryptoSoft mono-instance
-
-- CryptoSoft ne peut tourner qu'en un seul exemplaire
-- EasySave doit gerer cette contrainte sans corruption de flux
-
-#### Centralisation des logs (Docker)
-
-- service Docker de centralisation temps reel
-- modes possibles :
+Le passage de la **v2.0** à la **v3.0** implique :
+- l'abandon du mode purement sequentiel
+- l'exécution des travaux **en parallèle**
+- l'extensions prioritaires configurées dans les parametres
+- qu'aucun fichier non prioritaire ne doit être sauvegardé tant qu'il reste au moins un travail prioritaire non-sauvegardé
+- l'interdiction de transferer en parallèle 2 fichiers > `n` Ko
+- que la taille `n` Ko soit configurable
+- que lors de la sauvegarde d'un gros fichier, des petits fichiers peuvent être sauvegarder en parralèle si les règles de priorité sont respectées
+- de possible interaction durant la sauvegarde d'un travail :
+  - `Play` (démarrage/reprise)
+  - `Pause` (pause effective après fichier en cours)
+  - `Stop` (arrêt immediat)
+- la suivi de progression temps reel (au minimum pourcentage)
+- que si le logiciel métier est détecter, mise en pause automatique de tous les travaux
+- la reprise automatique quand le logiciel metier se ferme
+- que l'application **Cryptosoft** ne peut tourner qu'en un seul exemplaire
+- un service Docker de centralisation en temps réel avec plusieurs modes possibles :
   - local uniquement
   - centralise uniquement
   - local + centralise
-- en mode centralise : un unique fichier journalier mutualise, avec identification utilisateur/machine
+- qu'un seul et unique fichier journalier doit existé
 
-## 4) Contraintes transverses du projet
+### Architecture logique de l'application
 
-- langage : C#
-- framework cible pedagogique : .NET 8.0 (selon cahier des charges)
-- outils : Visual Studio, GitHub, UML (ArgoUML recommande)
-- tout document/code/commentaire exploitable par des equipes anglophones
-- fonctions courtes, faible duplication, conventions de nommage strictes
-- release notes obligatoires
-- manuel utilisateur : 1 page
-- documentation support : prerequis, emplacement installation, config, logs, etat
+À partir de la racine du projet, nous avons :
+\\\\\\ À Compléter \\\\\
 
-## 5) Architecture cible recommandee
+# Bonne pratique de développement appliquer
 
-- couche **Core/Domain** : modeles et regles metier pures
-- couche **Application** : orchestration des jobs, priorites, pause/play/stop
-- couche **Infrastructure** :
-  - acces systeme fichiers
-  - logs JSON/XML + centralisation
-  - integration CryptoSoft
-  - detection logiciel metier
-- couche **Presentation** :
-  - Console (v1.x)
-  - GUI MVVM (v2/v3)
+Voici les **bonnes pratiques** que nous avons utilisé pour rendre le code de l'application évolutive et maintenable :
+- Architecture MVVM pour toutes les versions
+- Design pattern de stratégie appliquer pour la logique de choix d'option (partie ViewModel)
+- Tests unitaires implémenter depuis la racine dans le dossier `UnitTest` pour tester les fonctionnalités de l'application et pour l'aide au débogage
+- Modularité des codes pousser au maximum pour une meilleure maintenance du code
 
-Cette separation reduit les couts des futures versions et limite les regressions.
+# Pipeline de développement du dépôt
 
-## 6) Etat actuel du depot (important)
+Le dépôt présent contient comprend plusieurs branches particulières.
 
-Le depot present contient une base fonctionnelle surtout orientee console :
+Les **branches principaux** qui sont utilisé durant le développement sont :
+- `main` : Contient la version actuelle de l'application
+- `production` : Contient le prototype de l'application en cours de développement
 
-- sauvegardes complete/differentielle
-- gestion FR/EN
-- log JSON
-- etat temps reel JSON
-- tests unitaires en place
+Les autres branches posté dans le dépôt par les membres de l'équipe sont utiliser pour suivre l'avancement de leurs travaux.
 
-Fonctionnalites encore a implementer selon roadmap globale :
+Nous utilisons des **pull request** pour valider et intégrer toute modification à l'application.
 
-- format XML (v1.1)
-- interface graphique (v2+)
-- CryptoSoft (v2+)
-- detection/pause logiciel metier (v2/v3)
-- parallelisme, priorites, controle gros fichiers (v3)
-- centralisation Docker des logs (v3)
+La pipeline de développement durant le projet se déroule de cette façon :
+- Un développeur finit de développer une fonctionnalité et push son code dans ce dépôt en ligne
+- Ce même développeur poste un pull request
+- Un autre développeur de l'équipe vérifie les changements effectuer par le développeur qui est l'auteur depuis la pull request posté
+- Si les modifications sont correcte, le développeur qui vérifie la pull request la valide et les modifications s'applique vers la branche `production`
+- Les autres développeurs peuvent se mettre à jour localement avec les modifications apporté dans la branche `production` en faisant un pull.
+- Si tout fonctionne correctement, un pull request se fait pour appliqué les modifications de la branche `production` vers la branche `main`
 
-## 7) Prise en main (depot actuel)
+En résumé, lorsque tout se passe bien, la **pipeline** permet à chaque modification durant le développement de l'application de suivre ce chemin de versionning :
+`branche personnelle` -> `production` -> `main`
 
+
+# Quelque commandes utiles durant le développement
+
+**Lignes de commandes** à utiliser depuis un **terminal** lors du développement de l'application :
 ```bash
-dotnet restore
-dotnet build
-dotnet run --project Console
-dotnet test
+dotnet build     # pour compiler le code
+dotnet run     # pour démarrer l'application
+dotnet test    # pour démarrer les test unitaires
 ```
 
-## 8) Livrables documentaires a maintenir
+# Livrables à rendre
 
-- UML a rendre avant chaque livrable
-- manuel utilisateur (1 page)
-- guide support technique
-- release note par version
-- compte-rendu d'evolutions envisagees v4.0 (benefice client vs cout dev)
+D'autres livrables seront aussi rendu séparément à savoir :
+- un **UML** pour chaque version de l'application
+- un **manuel utilisateur (1 page)** à la fin du développement de l'application
