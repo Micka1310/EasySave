@@ -4,6 +4,7 @@
 - [Vision globale](#vision-globale)
 - [Contexte et problématique](#contexte-et-problématique)
 - [Fonctionnalités attendues par version](#fonctionnalités-attendues-par-version)
+- [Bonne pratique de développement appliquer](#Bonne-pratique-de-développement-appliquer)
 - [Pipeline de développement du dépôt](#pipeline-de-développement-du-dépôt)
 - [Quelque commandes utiles durant le développement](#quelque-commandes-utiles-durant-le-développement)
 - [Livrables à rendre](#livrables-à-rendre)
