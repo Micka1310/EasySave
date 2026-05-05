@@ -286,6 +286,28 @@ public sealed class TestConsoleStrategy
     }
 
     [TestMethod]
+    public void CreateWork_Max5_ReturnsError()
+    {
+        Controller controller = new();
+
+        Trace.WriteLine("[TEST] Creation de 6 travaux - le 6eme doit etre refuse (FR)");
+        Trace.WriteLine("");
+
+        for (int i = 1; i <= 5; i++)
+        {
+            string res = controller.OptionExecuted(2, [$"fichier{i}", $"C:\\src{i}", $"C:\\dst{i}", "1"]);
+            Trace.WriteLine($"  Travail {i} : {res}");
+            Assert.AreEqual("Travaux sauvegardé", res);
+        }
+
+        string result = controller.OptionExecuted(2, ["fichier6", "C:\\src6", "C:\\dst6", "1"]);
+        Trace.WriteLine($"  Travail 6 : {result}");
+        DisplayResult(result);
+
+        Assert.AreEqual("Maximum de 5 travaux atteint", result);
+    }
+
+    [TestMethod]
     public void ChangeLanguage_FR_To_EN_FullFlow()
     {
         Controller controller = new();
@@ -426,7 +448,7 @@ public sealed class TestLanguage
             "execute_input", "language_choice",
             "display_work_title", "display_file_name", "display_source",
             "display_destination", "display_type",
-            "work_saved", "language_changed", "menu_title", "invalid_option"
+            "work_saved", "work_max_reached", "language_changed", "menu_title", "invalid_option"
         ];
 
         lang.SetLanguage(Lang.FR);

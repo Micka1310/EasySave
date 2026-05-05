@@ -4,6 +4,8 @@ namespace WorkListFile;
 
 public class WorkList
 {
+    public const int MaxWorks = 5;
+
     // Attributes
     private List<Work> works { get; }
 
@@ -17,6 +19,11 @@ public class WorkList
     public List<Work> GetWork()
     {
         return works;
+    }
+
+    public bool IsFull()
+    {
+        return works.Count >= MaxWorks;
     }
 
     public void AddWork(List<string> parameter)

@@ -63,6 +63,11 @@ public class CreateWork2 : IStrategy
     // Méthodes
     public string Execution(List<string> parameters, WorkList workList)
     {
+        if (workList.IsFull())
+        {
+            return Language.GetInstance().GetString("work_max_reached");
+        }
+
         // Ajouter le travail à la liste
         workList.AddWork(parameters);
 

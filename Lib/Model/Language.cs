@@ -37,6 +37,7 @@ public class Language
                 { "display_type", "- Type de sauvegarde : " },
 
                 { "work_saved", "Travaux sauvegardé" },
+                { "work_max_reached", "Maximum de 5 travaux atteint" },
                 { "language_changed", "Langue changée en Français" },
 
                 { "menu_title", "Choisissez une option :" },
@@ -67,6 +68,7 @@ public class Language
                 { "display_type", "- Backup type: " },
 
                 { "work_saved", "Work saved" },
+                { "work_max_reached", "Maximum of 5 works reached" },
                 { "language_changed", "Language changed to English" },
 
                 { "menu_title", "Choose an option:" },
