@@ -1,3 +1,10 @@
+/* 
+ * Command line for testing :
+ * dotnet test --logger "console;verbosity=detailed"
+ * dotnet test --filter "FullyQualifiedName~Namespace.NomDeClasse.NomDeMéthode"
+ * dotnet test
+*/
+
 using ConsoleStrategyFile;
 using WorkListFile;
 

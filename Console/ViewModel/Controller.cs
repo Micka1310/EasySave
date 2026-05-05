@@ -18,7 +18,8 @@ public class Controller
             new DisplayWork1(),
 			new CreateWork2(),
 			new ExecuteWork3(),
-			new ChangeLanguage4()
+			new ChangeLanguage4(),
+			new DeleteWork5()
         };
 
         workList = new WorkList();
@@ -42,6 +43,14 @@ public class Controller
 	public List<string> GetParameterMessage(int input)
 	{
 		int realInput = input - 1;
+
+		if (realInput + 1 > strategiesList.Count() || realInput < 0)
+		{
+			List<string> error = new List<string>();
+			error.Add("error");
+
+            return error;
+		}
 
 		return strategiesList[realInput].parameterMessage;
     }

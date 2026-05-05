@@ -1,8 +1,11 @@
 ﻿/* 
  * Command line for testing :
  * dotnet test --logger "console;verbosity=detailed"
+ * dotnet test --filter "FullyQualifiedName~Namespace.NomDeClasse.NomDeMéthode"
  * dotnet test
 */
+
+namespace ConsoleControllerTest;
 
 using ControllerFile;
 using LanguageFile;
@@ -12,10 +15,21 @@ using System.Diagnostics;
 [DoNotParallelize]
 public sealed class TestConsoleStrategy
 {
+    
     [TestInitialize]
     public void Setup()
     {
         Language.Reset();
+    }
+
+    [TestMethod]
+    public void InputException()
+    {
+        Controller controller1 = new Controller();
+        int input = 5;
+        List<string> result = controller1.GetParameterMessage(input);
+
+        Trace.WriteLine("Nombre d'élément : " + controller1.GetParameterMessage(input).Count());
     }
 
     private void DisplayMenu(Controller controller)
@@ -161,6 +175,37 @@ public sealed class TestConsoleStrategy
         StringAssert.Contains(displayResult, "fichier2");
         StringAssert.Contains(displayResult, "C:\\source1");
         StringAssert.Contains(displayResult, "C:\\dest2");
+    }
+
+    [TestMethod]
+    public void DeleteWork()
+    {
+        Controller controller = new();
+
+        Trace.WriteLine("[TEST] Suppression des travaux (FR)");
+
+        List<string> parameters1 = new List<string>();
+
+        parameters1.Add("nom1");
+        parameters1.Add("source1");
+        parameters1.Add("destination1");
+        parameters1.Add("type1");
+
+        controller.OptionExecuted(2, parameters1);
+        
+        Trace.WriteLine("Utilisateur choisit : 1");
+        
+        string result1 = controller.OptionExecuted(1, []);
+        DisplayResult(result1);
+
+        List<string> parameters2 = new List<string>();
+
+        parameters2.Add("nom1");
+
+        string result2 = controller.OptionExecuted(5, parameters2);
+
+        DisplayResult(result2);
+        DisplayResult(result1);
     }
 
     [TestMethod]
@@ -441,4 +486,5 @@ public sealed class TestLanguage
             Assert.IsNotNull(lang.GetString(key), $"Missing key in EN: {key}");
         }
     }
+    
 }
