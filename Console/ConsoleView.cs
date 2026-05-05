@@ -3,110 +3,193 @@
 using LanguageFile;
 using ControllerFile;
 
-    public class ConsoleView
+public class ConsoleView
+{
+    private readonly Controller _controller;
+    private readonly Language _language;
+
+    public ConsoleView(Controller controller)
     {
-        private readonly Controller _controller;
-        private readonly Language _language;
-        public ConsoleView(Controller controller)
+        _controller = controller;
+        _language = Language.GetInstance();
+    }
+
+    public void Run()
+    {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        Console.CursorVisible = false;
+
+        DisplayBanner();
+        ChooseLanguage();
+
+        while (true)
         {
-            _controller = controller;
-            _language = Language.GetInstance();
+            int choice = MenuSelect();
+            if (choice == -1) break;
+
+            Console.Clear();
+            DisplayHeader();
+            SendInput(choice + 1);
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine("  Appuyez sur une touche pour continuer...");
+            Console.ResetColor();
+            Console.ReadKey(true);
         }
 
-        /// <summary>
-        /// Entry point : asks for language first, then starts the main loop.
-        /// </summary>
-        public void Run()
+        Console.Clear();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("\n  Au revoir ! / Goodbye!\n");
+        Console.ResetColor();
+        Console.CursorVisible = true;
+    }
+
+    private void DisplayBanner()
+    {
+        Console.Clear();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine(@"
+    ███████╗ █████╗ ███████╗██╗   ██╗███████╗ █████╗ ██╗   ██╗███████╗
+    ██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝██╔════╝██╔══██╗██║   ██║██╔════╝
+    █████╗  ███████║███████╗ ╚████╔╝ ███████╗███████║██║   ██║█████╗  
+    ██╔══╝  ██╔══██║╚════██║  ╚██╔╝  ╚════██║██╔══██║╚██╗ ██╔╝██╔══╝  
+    ███████╗██║  ██║███████║   ██║   ███████║██║  ██║ ╚████╔╝ ███████╗
+    ╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝  ╚═══╝ ╚══════╝
+        ");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("    ─────────────────────────────────────────────────────────────────");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine("                        Backup Management Tool v1.0");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("    ─────────────────────────────────────────────────────────────────\n");
+        Console.ResetColor();
+    }
+
+    private void ChooseLanguage()
+    {
+        string[] langOptions = ["  Français", "  English"];
+        int selected = ArrowSelect(langOptions, "  Select your language / Choisissez votre langue :");
+
+        switch (selected)
         {
-            ChooseLanguage();
+            case 0:
+                _language.SetLanguage(Lang.FR);
+                break;
+            case 1:
+                _language.SetLanguage(Lang.EN);
+                break;
+            default:
+                _language.SetLanguage(Lang.FR);
+                break;
+        }
+    }
 
-            while (true)
+    private void DisplayHeader()
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("  ┌──────────────────────────────────────┐");
+        Console.WriteLine("  │            E A S Y S A V E           │");
+        Console.WriteLine("  └──────────────────────────────────────┘");
+        Console.ResetColor();
+        Console.WriteLine();
+    }
+
+    private int MenuSelect()
+    {
+        Console.Clear();
+        DisplayHeader();
+
+        List<string> options = _controller.GetOption();
+
+        string[] menuItems = new string[options.Count + 1];
+        for (int i = 0; i < options.Count; i++)
+        {
+            menuItems[i] = $"  {options[i]}";
+        }
+        menuItems[options.Count] = "  Exit / Quitter";
+
+        string title = $"  {_language.GetString("menu_title")}";
+        int selected = ArrowSelect(menuItems, title);
+
+        if (selected == options.Count) return -1;
+        return selected;
+    }
+
+    private int ArrowSelect(string[] options, string title)
+    {
+        int selected = 0;
+
+        while (true)
+        {
+            RenderOptions(options, selected, title);
+
+            ConsoleKeyInfo key = Console.ReadKey(true);
+
+            switch (key.Key)
             {
-                Menu();
+                case ConsoleKey.UpArrow:
+                    selected = (selected - 1 + options.Length) % options.Length;
+                    break;
+                case ConsoleKey.DownArrow:
+                    selected = (selected + 1) % options.Length;
+                    break;
+                case ConsoleKey.Enter:
+                    return selected;
+            }
+        }
+    }
 
-                int choice = GetInput();
-                if (choice == 0) break;
-                SendInput(choice);
-                Console.WriteLine();
+    private void RenderOptions(string[] options, int selected, string title)
+    {
+        int startLine = Console.CursorTop;
+
+        // Clear previous render
+        if (startLine > 0)
+        {
+            Console.SetCursorPosition(0, startLine - options.Length - 3);
+        }
+
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine($"\n{title}\n");
+        Console.ResetColor();
+
+        for (int i = 0; i < options.Length; i++)
+        {
+            if (i == selected)
+            {
+                Console.ForegroundColor = ConsoleColor.Black;
+                Console.BackgroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"  ► {options[i]}  ");
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.WriteLine($"    {options[i]}");
+                Console.ResetColor();
             }
         }
 
-        /// <summary>
-        /// Displayed once at startup to let the user choose their preferred language.
-        /// </summary>
-        private void ChooseLanguage()
-        {
-            Console.WriteLine("1. Français");
-            Console.WriteLine("2. English");
-            Console.Write("> ");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("\n  ↑↓ Naviguer  │  Enter Valider");
+        Console.ResetColor();
+    }
 
-            int choice = GetInput();
+    private string GetInput(string prompt)
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.Write($"  {prompt} ");
+        Console.ResetColor();
+        Console.CursorVisible = true;
+        string input = Console.ReadLine() ?? string.Empty;
+        Console.CursorVisible = false;
+        return input;
+    }
 
-            switch (choice)
-            {
-                case 1:
-                    _language.SetLanguage(Lang.FR);
-                    break;
-                case 2:
-                    _language.SetLanguage(Lang.EN);
-                    break;
-                default:
-                    // Default to Frech if invalid input
-                    _language.SetLanguage(Lang.FR);
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Fetches available options from the controller and displays the menu.
-        /// </summary>
-        public void Menu()
-        {
-            Console.WriteLine($"\n >>>>>>>>>> EasySave Menu <<<<<<<<<<");
-            Console.WriteLine(_language.GetString("menu_title"));
-
-            List<string> options = _controller.GetOption();
-
-            for (int i = 0; i < options.Count; i++)
-            {
-                Console.WriteLine($" {i + 1}. {options[i]}");
-            }
-
-            Console.WriteLine("0. Exit");
-            Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            Console.Write("> ");
-        }
-
-        /// <summary>
-        /// Reads and validates an integrer input from the user.
-        /// </summary>
-        public int GetInput()
-        {
-            string raw = Console.ReadLine() ?? string.Empty;
-
-            if (int.TryParse(raw, out int result))
-                return result;
-            Console.WriteLine(_language.GetString("invalid_option"));
-            return GetInput();
-        }
-
-        /// <summary>
-        /// Reads a string input frop the user after displaying a prompt.
-        /// </summary>
-        private string GetInput(string prompt)
-        {
-            Console.Write($"{prompt} ");
-            return Console.ReadLine() ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Processes the user;s menu choise
-        /// Fetches required parameters, collects them, then calls the controller.
-        /// </summary>
-        public void SendInput(int input)
-        {
-            List<string> parameterMessages = _controller.GetParameterMessage(input);
-            List<string> collectedParameters = new List<string>();
+    public void SendInput(int input)
+    {
+        List<string> parameterMessages = _controller.GetParameterMessage(input);
+        List<string> collectedParameters = new List<string>();
 
         foreach (string message in parameterMessages)
         {
@@ -115,7 +198,13 @@ using ControllerFile;
         }
 
         string result = _controller.OptionExecuted(input, collectedParameters);
-            Console.WriteLine(result);
+
+        if (!string.IsNullOrEmpty(result))
+        {
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"  ✓ {result}");
+            Console.ResetColor();
         }
     }
-
+}
