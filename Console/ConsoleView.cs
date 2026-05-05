@@ -20,6 +20,7 @@ public class ConsoleView
         Console.CursorVisible = false;
 
         DisplayBanner();
+        Thread.Sleep(1500);
         ChooseLanguage();
 
         while (true)
@@ -67,8 +68,8 @@ public class ConsoleView
 
     private void ChooseLanguage()
     {
-        string[] langOptions = ["  Français", "  English"];
-        int selected = ArrowSelect(langOptions, "  Select your language / Choisissez votre langue :");
+        string[] langOptions = ["Français", "English"];
+        int selected = ArrowSelect(langOptions, "Select your language / Choisissez votre langue", false);
 
         switch (selected)
         {
@@ -86,42 +87,46 @@ public class ConsoleView
 
     private void DisplayHeader()
     {
+        string langLabel = _language.GetCurrentLanguage() == Lang.FR ? "FR" : "EN";
+
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine("  ┌──────────────────────────────────────┐");
-        Console.WriteLine("  │            E A S Y S A V E           │");
-        Console.WriteLine("  └──────────────────────────────────────┘");
+        Console.WriteLine("  ┌──────────────────────────────────────────┐");
+        Console.WriteLine("  │              E A S Y S A V E             │");
+        Console.WriteLine("  └──────────────────────────────────────────┘");
+        Console.ResetColor();
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write("  Langue : ");
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine(langLabel);
         Console.ResetColor();
         Console.WriteLine();
     }
 
     private int MenuSelect()
     {
-        Console.Clear();
-        DisplayHeader();
-
         List<string> options = _controller.GetOption();
 
         string[] menuItems = new string[options.Count + 1];
         for (int i = 0; i < options.Count; i++)
         {
-            menuItems[i] = $"  {options[i]}";
+            menuItems[i] = options[i];
         }
-        menuItems[options.Count] = "  Exit / Quitter";
+        menuItems[options.Count] = "Exit / Quitter";
 
-        string title = $"  {_language.GetString("menu_title")}";
-        int selected = ArrowSelect(menuItems, title);
+        string title = _language.GetString("menu_title");
+        int selected = ArrowSelect(menuItems, title, true);
 
-        if (selected == options.Count) return -1;
+        if (selected == -1 || selected == options.Count) return -1;
         return selected;
     }
 
-    private int ArrowSelect(string[] options, string title)
+    private int ArrowSelect(string[] options, string title, bool allowEscape)
     {
         int selected = 0;
 
         while (true)
         {
-            RenderOptions(options, selected, title);
+            DrawScreen(options, selected, title, allowEscape);
 
             ConsoleKeyInfo key = Console.ReadKey(true);
 
@@ -131,27 +136,27 @@ public class ConsoleView
                     selected = (selected - 1 + options.Length) % options.Length;
                     break;
                 case ConsoleKey.DownArrow:
+                case ConsoleKey.Tab:
                     selected = (selected + 1) % options.Length;
                     break;
                 case ConsoleKey.Enter:
                     return selected;
+                case ConsoleKey.Escape:
+                    if (allowEscape) return -1;
+                    break;
             }
         }
     }
 
-    private void RenderOptions(string[] options, int selected, string title)
+    private void DrawScreen(string[] options, int selected, string title, bool allowEscape)
     {
-        int startLine = Console.CursorTop;
-
-        // Clear previous render
-        if (startLine > 0)
-        {
-            Console.SetCursorPosition(0, startLine - options.Length - 3);
-        }
+        Console.Clear();
+        DisplayHeader();
 
         Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine($"\n{title}\n");
+        Console.WriteLine($"  {title}");
         Console.ResetColor();
+        Console.WriteLine();
 
         for (int i = 0; i < options.Length; i++)
         {
@@ -159,19 +164,55 @@ public class ConsoleView
             {
                 Console.ForegroundColor = ConsoleColor.Black;
                 Console.BackgroundColor = ConsoleColor.Cyan;
-                Console.WriteLine($"  ► {options[i]}  ");
+                string line = $"   ► {options[i]}";
+                Console.Write(line);
+                int pad = 50 - line.Length;
+                if (pad > 0) Console.Write(new string(' ', pad));
                 Console.ResetColor();
+                Console.WriteLine();
             }
             else
             {
                 Console.ForegroundColor = ConsoleColor.Gray;
-                Console.WriteLine($"    {options[i]}");
+                Console.WriteLine($"     {options[i]}");
                 Console.ResetColor();
             }
         }
 
+        Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("\n  ↑↓ Naviguer  │  Enter Valider");
+        Console.WriteLine("  ┌──────────────────────────────────────────┐");
+
+        Console.Write("  │  ");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write("↑ ↓");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write(" Naviguer    ");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write("Tab");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write(" Suivant        ");
+        Console.WriteLine("│");
+
+        Console.Write("  │  ");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write("Enter");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write(" Valider  ");
+        if (allowEscape)
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("Esc");
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write(" Retour         ");
+        }
+        else
+        {
+            Console.Write("                    ");
+        }
+        Console.WriteLine("│");
+
+        Console.WriteLine("  └──────────────────────────────────────────┘");
         Console.ResetColor();
     }
 
