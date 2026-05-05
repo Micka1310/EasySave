@@ -1,15 +1,16 @@
 ﻿namespace ConsoleStrategyFile;
 
-using WorkListFile;
-using WorkFile;
 using LanguageFile;
 using LogFileLib;
 using StateFileLib;
+using System.Text.RegularExpressions;
+using WorkFile;
+using WorkListFile;
 
 // Interface for creating strategies
 public interface IStrategy
 {
-    // Attributs
+    // Attributes
     string option { get; }
     List<string> parameterMessage { get; }
 
@@ -60,9 +61,37 @@ public class CreateWork2 : IStrategy
         Language.GetInstance().GetString("create_type")
     ];
 
-    // Méthodes
+    // Methods
     public string Execution(List<string> parameters, WorkList workList)
     {
+        List<Work> workList1 = workList.GetWork();
+
+        // If there are already 5 works
+        if (workList1.Count() == 5)
+        {
+            return Language.GetInstance().GetString("5_works");
+        }
+
+        // To avoid duplicate work name
+        foreach (Work work in workList1)
+        {
+            if (parameters[0].Contains(work.GetName()))
+            {
+                return Language.GetInstance().GetString("same_work_name");
+            }
+        }
+
+        if (int.TryParse(parameters[3], out int result1))
+        {
+            int transferType = int.Parse(parameters[3]);
+
+            // If the transfer type is wrong
+            if (transferType < 0 || transferType > 2)
+            {
+                return Language.GetInstance().GetString("wrong_type_transfer");
+            }
+        }
+
         // Ajouter le travail à la liste
         workList.AddWork(parameters);
 
@@ -99,11 +128,31 @@ public class ExecuteWork3 : IStrategy
         Language.GetInstance().GetString("execute_input")
     ];
 
-    // Méthodes
+    // Methods
     public string Execution(List<string> parameters, WorkList workList)
     {
+        // If the input contain at least a number. The symbol "-" or ";" are optional
+        if (!Regex.IsMatch(parameters[0], @"^(?=.*\d)[\d;-]+$"))
+        {
+            return Language.GetInstance().GetString("invalid_input");
+        }
+
         // Récupérer les index des travaux à exécuter depuis le paramètre (ex: "1-3", "1;3", "2")
         List<int> indexes = ParseIndexes(parameters[0], workList.GetWork().Count);
+
+        // If the input have a number not associated to any work
+        foreach (int numWork in indexes)
+        {
+            if (numWork == -1)
+            {
+                return Language.GetInstance().GetString("wrong_num_work");
+            }
+
+            if (numWork == -2)
+            {
+                return Language.GetInstance().GetString("invalid_input");
+            }
+        }
 
         // Indicateur global : false si au moins une erreur s'est produite
         bool success = true;
@@ -128,7 +177,12 @@ public class ExecuteWork3 : IStrategy
             }
         }
 
-        return success.ToString().ToLower();
+        if (success)
+        {
+            return Language.GetInstance().GetString("work_transfered");
+        }
+
+        return Language.GetInstance().GetString("work_not_transfered");
     }
 
     // Analyse la saisie utilisateur et retourne la liste des index (base 0)
@@ -137,32 +191,70 @@ public class ExecuteWork3 : IStrategy
         List<int> indexes = new List<int>();
 
         // Format "1-3" : plage de travaux
-        if (input.Contains('-'))
+        if (Regex.IsMatch(input, @"^(?=.*\d-)[\d-]+$"))
         {
             string[] parts = input.Split('-');
+
+            // If invalid input (like 1--5, 51----6, 1-3-5, ...)
+            if (!int.TryParse(parts[0], out int result1) || !int.TryParse(parts[1], out int result2) || parts.Count() > 2)
+            {
+                indexes.Add(-2);
+
+                return indexes;
+            }
+            
             int start = int.Parse(parts[0]) - 1;
             int end = int.Parse(parts[1]) - 1;
 
             for (int i = start; i <= end; i++)
             {
                 if (i >= 0 && i < workCount) indexes.Add(i);
+
+                else
+                {
+                    indexes.Add(-1);
+                    continue;
+                }
             }
+
+            return indexes;
         }
+
         // Format "1;3" : travaux spécifiques
-        else if (input.Contains(';'))
+        if (Regex.IsMatch(input, @"^(?=.*\d;)[\d;]+$"))
         {
             foreach (string part in input.Split(';'))
             {
                 int i = int.Parse(part) - 1;
+
                 if (i >= 0 && i < workCount) indexes.Add(i);
+
+                else
+                {
+                    indexes.Add(-1);
+                    continue;
+                }
             }
+
+            return indexes;
         }
+
         // Format "2" : un seul travail
-        else
+        if (Regex.IsMatch(input, @"^(?=.*\d)[\d]+$"))
         {
             int i = int.Parse(input) - 1;
+
             if (i >= 0 && i < workCount) indexes.Add(i);
+
+            else
+            {
+                indexes.Add(-1);
+            }
+
+            return indexes;
         }
+
+        indexes.Add(-2);
 
         return indexes;
     }
@@ -351,5 +443,31 @@ public class ChangeLanguage4 : IStrategy
             default:
                 return lang.GetString("invalid_option");
         }
+    }
+}
+
+// option 5 : delete the work
+public class DeleteWork5 : IStrategy
+{
+    // Attributes
+    public string option => Language.GetInstance().GetString("option_delete");
+    public List<string> parameterMessage => [
+        Language.GetInstance().GetString("work_to_delete")
+    ];
+
+    // Methods
+    public string Execution(List<string> parameters, WorkList workList)
+    {
+        foreach (Work work in workList.GetWork())
+        {
+            if (work.GetName() == parameters[0])
+            {
+                workList.DeleteWork(parameters[0]);
+                return Language.GetInstance().GetString("work_deleted");
+            }
+        }
+        
+
+        return Language.GetInstance().GetString("work_not_deleted");
     }
 }
