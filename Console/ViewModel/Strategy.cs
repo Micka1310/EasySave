@@ -357,8 +357,7 @@ public class ExecuteWork3 : IStrategy
             string relativePath = Path.GetRelativePath(work.GetSourceDirectory(), sourceFile);
             string destinationFile = Path.Combine(work.GetDestinationDirectory(), relativePath);
 
-            if (!File.Exists(destinationFile) ||
-                File.GetLastWriteTime(sourceFile) > File.GetLastWriteTime(destinationFile))
+            if (ShouldCopyInDifferential(sourceFile, destinationFile))
             {
                 filesToCopy.Add(sourceFile);
             }
@@ -425,6 +424,25 @@ public class ExecuteWork3 : IStrategy
         }
 
         return success;
+    }
+
+    private static bool ShouldCopyInDifferential(string sourceFile, string destinationFile)
+    {
+        if (!File.Exists(destinationFile))
+        {
+            return true;
+        }
+
+        FileInfo sourceInfo = new FileInfo(sourceFile);
+        FileInfo destinationInfo = new FileInfo(destinationFile);
+
+        // Differential mode should copy when source and destination differ.
+        // Relying only on "source newer than destination" can miss valid changes
+        // (for example, overwritten files with atypical timestamps).
+        bool sizeDiffers = sourceInfo.Length != destinationInfo.Length;
+        bool timestampDiffers = sourceInfo.LastWriteTimeUtc != destinationInfo.LastWriteTimeUtc;
+
+        return sizeDiffers || timestampDiffers;
     }
 }
 
