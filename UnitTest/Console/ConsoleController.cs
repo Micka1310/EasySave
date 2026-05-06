@@ -1,6 +1,7 @@
 ﻿/* 
  * Command line for testing :
  * dotnet test --logger "console;verbosity=detailed"
+ * dotnet test --filter "FullyQualifiedName~Namespace.NomDeClasse.NomDeMéthode"
  * dotnet test
 */
 
@@ -496,7 +497,7 @@ public sealed class TestLanguage
 
         Controller controller = new();
         string result = controller.OptionExecuted(5, ["99"]);
-        Assert.IsTrue(result.Contains("Option invalide"), $"Le résultat doit contenir 'Option invalide' mais était : '{result}'");
+        Assert.Contains("Option invalide", result);
     }
 
     [TestMethod]
