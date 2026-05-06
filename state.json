@@ -1,0 +1,74 @@
+[
+  {
+    "WorkName": "DGREGRE",
+    "Timestamp": "2026-05-05 20:30:07",
+    "Status": "Inactive",
+    "TotalFiles": 0,
+    "TotalSize": 0,
+    "RemainingFiles": 0,
+    "RemainingSize": 0,
+    "Progression": 0,
+    "CurrentSourceFile": "GEGREG",
+    "CurrentDestinationFile": "HYRTHRY"
+  },
+  {
+    "WorkName": "gregregergre",
+    "Timestamp": "2026-05-06 01:01:30",
+    "Status": "Inactive",
+    "TotalFiles": 0,
+    "TotalSize": 0,
+    "RemainingFiles": 0,
+    "RemainingSize": 0,
+    "Progression": 0,
+    "CurrentSourceFile": "gregreg",
+    "CurrentDestinationFile": "regregre"
+  },
+  {
+    "WorkName": "GGREGRE",
+    "Timestamp": "2026-05-06 01:42:27",
+    "Status": "Inactive",
+    "TotalFiles": 185,
+    "TotalSize": 29287007,
+    "RemainingFiles": 0,
+    "RemainingSize": 0,
+    "Progression": 100,
+    "CurrentSourceFile": "C:\\Users\\malik\\Pictures\\poo test\\desktop.ini",
+    "CurrentDestinationFile": "C:\\Users\\malik\\Pictures\\GG\\desktop.ini"
+  },
+  {
+    "WorkName": "ALO",
+    "Timestamp": "2026-05-06 01:50:17",
+    "Status": "Inactive",
+    "TotalFiles": 0,
+    "TotalSize": 0,
+    "RemainingFiles": 0,
+    "RemainingSize": 0,
+    "Progression": 0,
+    "CurrentSourceFile": "FZEFEZ",
+    "CurrentDestinationFile": "FEZFEZ"
+  },
+  {
+    "WorkName": "FGEZGZRG",
+    "Timestamp": "2026-05-06 02:04:29",
+    "Status": "Inactive",
+    "TotalFiles": 0,
+    "TotalSize": 0,
+    "RemainingFiles": 0,
+    "RemainingSize": 0,
+    "Progression": 0,
+    "CurrentSourceFile": "RGREGREGERGER",
+    "CurrentDestinationFile": "GERGREGREGER"
+  },
+  {
+    "WorkName": "EEEEEEEEEEEE",
+    "Timestamp": "2026-05-06 02:05:37",
+    "Status": "Inactive",
+    "TotalFiles": 185,
+    "TotalSize": 29287007,
+    "RemainingFiles": 0,
+    "RemainingSize": 0,
+    "Progression": 100,
+    "CurrentSourceFile": "C:\\Users\\malik\\Pictures\\poo test\\desktop.ini",
+    "CurrentDestinationFile": "C:\\Users\\malik\\Pictures\\GG\\desktop.ini"
+  }
+]
