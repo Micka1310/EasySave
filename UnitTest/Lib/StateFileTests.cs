@@ -1,4 +1,4 @@
-using StateFileLib;
+using EasyLog;
 
 // Tests de la classe StateFile
 [TestClass]
@@ -73,5 +73,33 @@ public class StateFileTests
         string content = File.ReadAllText(filePath);
         Assert.Contains("WorkA", content);
         Assert.Contains("WorkB", content);
+    }
+
+    [TestMethod]
+    public void ReadAllStates_AfterWrite_ShouldReturnSameWork()
+    {
+        StateFile stateFile = new StateFile();
+        WorkState state = new WorkState
+        {
+            WorkName = "ReadTest",
+            Status = "Active",
+            Progression = 42,
+            TotalFiles = 10,
+            TotalSize = 4096,
+            RemainingFiles = 3,
+            RemainingSize = 512,
+            CurrentSourceFile = @"C:\src\f.txt",
+            CurrentDestinationFile = @"C:\dst\f.txt"
+        };
+
+        stateFile.WriteProcess(state);
+
+        List<WorkState> all = stateFile.ReadAllStates();
+
+        Assert.IsTrue(all.Exists(s => s.WorkName == "ReadTest"));
+        WorkState? found = all.Find(s => s.WorkName == "ReadTest");
+        Assert.IsNotNull(found);
+        Assert.AreEqual(42, found!.Progression);
+        Assert.AreEqual(3, found.RemainingFiles);
     }
 }

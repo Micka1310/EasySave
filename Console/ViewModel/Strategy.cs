@@ -1,30 +1,24 @@
 ﻿namespace ConsoleStrategyFile;
 
+using System.Globalization;
 using WorkListFile;
 using WorkFile;
 using LanguageFile;
-using LogFileLib;
-using StateFileLib;
+using EasyLog;
 
-// Interface for creating strategies
 public interface IStrategy
 {
-    // Attributs
     string option { get; }
     List<string> parameterMessage { get; }
-
-    // Methods
     public string Execution(List<string> parameters, WorkList workList);
 }
 
 // Option 1 : display all the works
 public class DisplayWork1 : IStrategy
 {
-    // Attributes
     public string option => Language.GetInstance().GetString("option_display");
     public List<string> parameterMessage => [];
 
-    // Methods
     public string Execution(List<string> parameters, WorkList workList)
     {
         Language lang = Language.GetInstance();
@@ -35,13 +29,16 @@ public class DisplayWork1 : IStrategy
 
         foreach (Work elem in WorkList)
         {
-            index = index + 1;
-            displayString = displayString
-                + lang.GetString("display_work_title") + $"{index} :\n"
+            index++;
+            string typeLabel = elem.GetWorkType() == "1"
+                ? lang.GetString("backup_type_short_full")
+                : lang.GetString("backup_type_short_diff");
+
+            displayString += lang.GetString("display_work_title") + $"{index} :\n"
                 + lang.GetString("display_file_name") + elem.GetName() + "\n"
                 + lang.GetString("display_source") + elem.GetSourceDirectory() + "\n"
                 + lang.GetString("display_destination") + elem.GetDestinationDirectory() + "\n"
-                + lang.GetString("display_type") + elem.GetWorkType() + "\n\n ";
+                + lang.GetString("display_type") + typeLabel + "\n\n ";
         }
 
         return displayString;
@@ -51,7 +48,6 @@ public class DisplayWork1 : IStrategy
 // Option 2 : créer un nouveau travail de sauvegarde
 public class CreateWork2 : IStrategy
 {
-    // Attributes
     public string option => Language.GetInstance().GetString("option_create");
     public List<string> parameterMessage => [
         Language.GetInstance().GetString("create_name"),
@@ -60,123 +56,226 @@ public class CreateWork2 : IStrategy
         Language.GetInstance().GetString("create_type")
     ];
 
-    // Méthodes
     public string Execution(List<string> parameters, WorkList workList)
     {
-        // Ajouter le travail à la liste
-        workList.AddWork(parameters);
+        Language lang = Language.GetInstance();
 
-        // Enregistrer l'état du travail créé dans state.json
+        if (workList.IsFull())
+        {
+            return lang.GetString("work_max_reached");
+        }
+
+        if (parameters.Count < 4)
+        {
+            return lang.GetString("error_missing_create_parameters");
+        }
+
+        string name = parameters[0].Trim();
+        string source = parameters[1].Trim();
+        string destination = parameters[2].Trim();
+        string typeRaw = parameters[3].Trim();
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return lang.GetString("error_empty_work_name");
+        }
+
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            return lang.GetString("error_empty_source");
+        }
+
+        if (string.IsNullOrWhiteSpace(destination))
+        {
+            return lang.GetString("error_empty_destination");
+        }
+
+        if (!Directory.Exists(source))
+        {
+            return lang.GetString("error_source_not_found");
+        }
+
+        if (!Directory.Exists(destination))
+        {
+            return lang.GetString("error_destination_not_found");
+        }
+
+        string sourceFullPath = Path.GetFullPath(source).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string destinationFullPath = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (string.Equals(sourceFullPath, destinationFullPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return lang.GetString("error_same_source_destination");
+        }
+
+        if (!TryNormalizeBackupType(typeRaw, out string typeNormalized))
+        {
+            return lang.GetString("error_invalid_backup_type");
+        }
+
+        List<string> validated = [name, source, destination, typeNormalized];
+        workList.AddWork(validated);
+
         StateFile stateFile = new StateFile();
         stateFile.WriteProcess(new WorkState
         {
-            WorkName = parameters[0],
-            Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            WorkName = name,
+            Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
             Status = "Inactive",
             TotalFiles = 0,
             TotalSize = 0,
             RemainingFiles = 0,
             RemainingSize = 0,
             Progression = 0,
-            CurrentSourceFile = parameters[1],
-            CurrentDestinationFile = parameters[2]
+            CurrentSourceFile = source,
+            CurrentDestinationFile = destination
         });
 
-        // Enregistrer l'action dans le fichier log journalier
-        LogFile logFile = new LogFile();
-        logFile.WriteLogs(parameters[0], parameters[1], parameters[2], 0, 0);
+        Logger logger = new Logger();
+        logger.WriteLogs(name, source, destination, 0, 0);
 
-        return Language.GetInstance().GetString("work_saved");
+        return lang.GetString("work_saved");
+    }
+
+    private static bool TryNormalizeBackupType(string raw, out string normalized)
+    {
+        normalized = "";
+        string s = raw.Trim();
+        if (s == "1") { normalized = "1"; return true; }
+        if (s == "2") { normalized = "2"; return true; }
+
+        string lower = s.ToLowerInvariant();
+        if (lower is "complet" or "full") { normalized = "1"; return true; }
+        if (lower is "différentielle" or "differentielle" or "differential" or "diff") { normalized = "2"; return true; }
+        if (lower.Contains("complet", StringComparison.OrdinalIgnoreCase) ||
+            lower.Contains("full", StringComparison.OrdinalIgnoreCase)) { normalized = "1"; return true; }
+        if (lower.Contains("différ", StringComparison.OrdinalIgnoreCase) ||
+            lower.Contains("differ", StringComparison.OrdinalIgnoreCase)) { normalized = "2"; return true; }
+
+        return false;
     }
 }
 
-// Option 3 : exécuter un ou plusieurs travaux de sauvegarde
+// Option 3 : exécuter un ou plusieurs travaux de sauvegarde (avec progression temps réel)
 public class ExecuteWork3 : IStrategy
 {
-    // Attributes
     public string option => Language.GetInstance().GetString("option_execute");
     public List<string> parameterMessage => [
         Language.GetInstance().GetString("execute_input")
     ];
 
-    // Méthodes
+    /// <summary>Callback appelé à chaque fichier copié pour afficher la progression en console.</summary>
+    public Action<WorkState>? OnProgress { get; set; }
+
     public string Execution(List<string> parameters, WorkList workList)
     {
-        // Récupérer les index des travaux à exécuter depuis le paramètre (ex: "1-3", "1;3", "2")
-        List<int> indexes = ParseIndexes(parameters[0], workList.GetWork().Count);
+        Language lang = Language.GetInstance();
+        int workCount = workList.GetWork().Count;
 
-        // Indicateur global : false si au moins une erreur s'est produite
+        if (parameters.Count < 1)
+        {
+            return lang.GetString("error_empty_execute_input");
+        }
+
+        string rawInput = parameters[0].Trim();
+        if (string.IsNullOrEmpty(rawInput))
+        {
+            return lang.GetString("error_empty_execute_input");
+        }
+
+        if (workCount == 0)
+        {
+            return lang.GetString("error_no_works_to_execute");
+        }
+
+        if (!TryParseIndexes(rawInput, workCount, out List<int> indexes, out string? errorKey))
+        {
+            return lang.GetString(errorKey!);
+        }
+
         bool success = true;
+        List<string> errors = [];
 
         foreach (int index in indexes)
         {
-            // Récupérer le travail correspondant
             Work work = workList.GetWork()[index];
+            List<string> jobErrors = [];
 
-            // Exécuter selon le type de sauvegarde
             if (work.GetWorkType() == "1")
             {
-                // Sauvegarde complète : copier tous les fichiers
-                bool result = ExecuteFullBackup(work);
-                if (!result) success = false;
+                if (!ExecuteFullBackup(work, jobErrors)) success = false;
             }
             else
             {
-                // Sauvegarde différentielle : copier uniquement les nouveaux/modifiés
-                bool result = ExecuteDifferentialBackup(work);
-                if (!result) success = false;
+                if (!ExecuteDifferentialBackup(work, jobErrors)) success = false;
+            }
+
+            foreach (string err in jobErrors)
+            {
+                errors.Add($"[{work.GetName()}] {err}");
             }
         }
 
-        return success.ToString().ToLower();
+        if (success)
+        {
+            return "true";
+        }
+
+        string summary = "false\n";
+        foreach (string err in errors)
+        {
+            summary += $"  - {err}\n";
+        }
+        return summary.TrimEnd();
     }
 
-    // Analyse la saisie utilisateur et retourne la liste des index (base 0)
-    private List<int> ParseIndexes(string input, int workCount)
+    private static bool TryParseIndexes(string input, int workCount, out List<int> indexes, out string? errorKey)
     {
-        List<int> indexes = new List<int>();
+        indexes = [];
+        errorKey = null;
+        input = input.Trim();
 
-        // Format "1-3" : plage de travaux
-        if (input.Contains('-'))
+        if (string.IsNullOrEmpty(input))
         {
-            string[] parts = input.Split('-');
-            int start = int.Parse(parts[0]) - 1;
-            int end = int.Parse(parts[1]) - 1;
-
-            for (int i = start; i <= end; i++)
-            {
-                if (i >= 0 && i < workCount) indexes.Add(i);
-            }
-        }
-        // Format "1;3" : travaux spécifiques
-        else if (input.Contains(';'))
-        {
-            foreach (string part in input.Split(';'))
-            {
-                int i = int.Parse(part) - 1;
-                if (i >= 0 && i < workCount) indexes.Add(i);
-            }
-        }
-        // Format "2" : un seul travail
-        else
-        {
-            int i = int.Parse(input) - 1;
-            if (i >= 0 && i < workCount) indexes.Add(i);
-        }
-
-        return indexes;
-    }
-
-    // Sauvegarde complète : copie tous les fichiers du répertoire source vers la destination
-    private bool ExecuteFullBackup(Work work)
-    {
-        // Vérifier que le répertoire source existe
-        if (!Directory.Exists(work.GetSourceDirectory()))
-        {
+            errorKey = "error_empty_execute_input";
             return false;
         }
 
-        // Récupérer tous les fichiers du répertoire source (y compris sous-dossiers)
+        string[] tokens = input.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (string token in tokens)
+        {
+            if (!int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out int num))
+            {
+                errorKey = "error_invalid_execute_format";
+                return false;
+            }
+
+            int i = num - 1;
+            if (i >= 0 && i < workCount)
+            {
+                indexes.Add(i);
+            }
+        }
+
+        indexes = indexes.Distinct().ToList();
+
+        if (indexes.Count == 0)
+        {
+            errorKey = "error_invalid_work_selection";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ExecuteFullBackup(Work work, List<string> errors)
+    {
+        if (!Directory.Exists(work.GetSourceDirectory()))
+        {
+            errors.Add($"Dossier source introuvable : {work.GetSourceDirectory()}");
+            return false;
+        }
+
         string[] files = Directory.GetFiles(work.GetSourceDirectory(), "*", SearchOption.AllDirectories);
 
         int totalFiles = files.Length;
@@ -186,42 +285,41 @@ public class ExecuteWork3 : IStrategy
         bool success = true;
 
         StateFile stateFile = new StateFile();
-        LogFile logFile = new LogFile();
+        Logger logger = new Logger();
 
         foreach (string sourceFile in files)
         {
-            // Construire le chemin de destination en conservant la structure des sous-dossiers
             string relativePath = Path.GetRelativePath(work.GetSourceDirectory(), sourceFile);
             string destinationFile = Path.Combine(work.GetDestinationDirectory(), relativePath);
 
-            // Créer le répertoire de destination si nécessaire
             Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
 
             long fileSize = new FileInfo(sourceFile).Length;
             long transferTime;
+            bool fileSuccess = true;
+            string errorMsg = "";
 
             try
             {
-                // Mesurer le temps de transfert
                 var watch = System.Diagnostics.Stopwatch.StartNew();
                 File.Copy(sourceFile, destinationFile, true);
                 watch.Stop();
                 transferTime = watch.ElapsedMilliseconds;
             }
-            catch
+            catch (Exception ex)
             {
-                // Temps négatif en cas d'erreur
                 transferTime = -1;
+                fileSuccess = false;
+                errorMsg = ex.Message;
+                errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
                 success = false;
             }
 
-            // Mettre à jour les compteurs
             remainingFiles--;
             remainingSize -= fileSize;
             int progression = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100 / totalFiles) : 100;
 
-            // Mettre à jour l'état en temps réel
-            stateFile.WriteProcess(new WorkState
+            WorkState state = new WorkState
             {
                 WorkName = work.GetName(),
                 Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -233,37 +331,33 @@ public class ExecuteWork3 : IStrategy
                 Progression = progression,
                 CurrentSourceFile = sourceFile,
                 CurrentDestinationFile = destinationFile
-            });
+            };
 
-            // Écrire dans le log journalier
-            logFile.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime);
+            stateFile.WriteProcess(state);
+            OnProgress?.Invoke(state);
+            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, fileSuccess, errorMsg);
         }
 
         return success;
     }
 
-    // Sauvegarde différentielle : copie uniquement les fichiers nouveaux ou modifiés
-    private bool ExecuteDifferentialBackup(Work work)
+    private bool ExecuteDifferentialBackup(Work work, List<string> errors)
     {
-        // Vérifier que le répertoire source existe
         if (!Directory.Exists(work.GetSourceDirectory()))
         {
+            errors.Add($"Dossier source introuvable : {work.GetSourceDirectory()}");
             return false;
         }
 
         string[] files = Directory.GetFiles(work.GetSourceDirectory(), "*", SearchOption.AllDirectories);
-
-        // Filtrer uniquement les fichiers nouveaux ou modifiés
-        List<string> filesToCopy = new List<string>();
+        List<string> filesToCopy = [];
 
         foreach (string sourceFile in files)
         {
             string relativePath = Path.GetRelativePath(work.GetSourceDirectory(), sourceFile);
             string destinationFile = Path.Combine(work.GetDestinationDirectory(), relativePath);
 
-            // Copier si le fichier n'existe pas en destination ou s'il a été modifié
-            if (!File.Exists(destinationFile) ||
-                File.GetLastWriteTime(sourceFile) > File.GetLastWriteTime(destinationFile))
+            if (ShouldCopyInDifferential(sourceFile, destinationFile))
             {
                 filesToCopy.Add(sourceFile);
             }
@@ -276,7 +370,7 @@ public class ExecuteWork3 : IStrategy
         bool success = true;
 
         StateFile stateFile = new StateFile();
-        LogFile logFile = new LogFile();
+        Logger logger = new Logger();
 
         foreach (string sourceFile in filesToCopy)
         {
@@ -287,6 +381,8 @@ public class ExecuteWork3 : IStrategy
 
             long fileSize = new FileInfo(sourceFile).Length;
             long transferTime;
+            bool fileSuccess = true;
+            string errorMsg = "";
 
             try
             {
@@ -295,9 +391,12 @@ public class ExecuteWork3 : IStrategy
                 watch.Stop();
                 transferTime = watch.ElapsedMilliseconds;
             }
-            catch
+            catch (Exception ex)
             {
                 transferTime = -1;
+                fileSuccess = false;
+                errorMsg = ex.Message;
+                errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
                 success = false;
             }
 
@@ -305,7 +404,7 @@ public class ExecuteWork3 : IStrategy
             remainingSize -= fileSize;
             int progression = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100 / totalFiles) : 100;
 
-            stateFile.WriteProcess(new WorkState
+            WorkState state = new WorkState
             {
                 WorkName = work.GetName(),
                 Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -317,39 +416,123 @@ public class ExecuteWork3 : IStrategy
                 Progression = progression,
                 CurrentSourceFile = sourceFile,
                 CurrentDestinationFile = destinationFile
-            });
+            };
 
-            logFile.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime);
+            stateFile.WriteProcess(state);
+            OnProgress?.Invoke(state);
+            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, fileSuccess, errorMsg);
         }
 
         return success;
     }
+
+    private static bool ShouldCopyInDifferential(string sourceFile, string destinationFile)
+    {
+        if (!File.Exists(destinationFile))
+        {
+            return true;
+        }
+
+        FileInfo sourceInfo = new FileInfo(sourceFile);
+        FileInfo destinationInfo = new FileInfo(destinationFile);
+
+        // Differential mode should copy when source and destination differ.
+        // Relying only on "source newer than destination" can miss valid changes
+        // (for example, overwritten files with atypical timestamps).
+        bool sizeDiffers = sourceInfo.Length != destinationInfo.Length;
+        bool timestampDiffers = sourceInfo.LastWriteTimeUtc != destinationInfo.LastWriteTimeUtc;
+
+        return sizeDiffers || timestampDiffers;
+    }
 }
 
-// option 4 : change the language
-public class ChangeLanguage4 : IStrategy
+// Option 4 : supprimer un travail
+public class DeleteWork4 : IStrategy
 {
-    // Attributes
+    public string option => Language.GetInstance().GetString("option_delete");
+    public List<string> parameterMessage => [
+        Language.GetInstance().GetString("delete_input")
+    ];
+
+    public string Execution(List<string> parameters, WorkList workList)
+    {
+        Language lang = Language.GetInstance();
+
+        if (workList.GetWork().Count == 0)
+        {
+            return lang.GetString("delete_no_jobs");
+        }
+
+        if (parameters.Count < 1)
+        {
+            return lang.GetString("delete_invalid");
+        }
+
+        string raw = parameters[0].Trim();
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int num))
+        {
+            return lang.GetString("delete_invalid");
+        }
+
+        int index = num - 1;
+        if (!workList.RemoveWork(index))
+        {
+            return lang.GetString("delete_invalid");
+        }
+
+        return lang.GetString("delete_success");
+    }
+}
+
+// Option 5 : change the language
+public class ChangeLanguage5 : IStrategy
+{
     public string option => Language.GetInstance().GetString("option_language");
     public List<string> parameterMessage => [
         Language.GetInstance().GetString("language_choice")
     ];
 
-    // Methods
     public string Execution(List<string> parameters, WorkList workList)
     {
         Language lang = Language.GetInstance();
 
-        switch (parameters[0])
+        if (parameters.Count < 1)
+        {
+            return lang.GetString("invalid_option");
+        }
+
+        switch (parameters[0].Trim())
         {
             case "1":
                 lang.SetLanguage(Lang.FR);
-                return lang.GetString("language_changed");
+                return lang.GetString("language_changed_to_fr");
             case "2":
                 lang.SetLanguage(Lang.EN);
-                return lang.GetString("language_changed");
+                return lang.GetString("language_changed_to_en");
             default:
                 return lang.GetString("invalid_option");
         }
+    }
+}
+
+public static class BackupProgressHelper
+{
+    public static string FormatBytes(long bytes, Lang lang)
+    {
+        if (bytes < 0) bytes = 0;
+
+        string[] units = lang == Lang.FR
+            ? ["o", "Ko", "Mo", "Go", "To"]
+            : ["B", "KB", "MB", "GB", "TB"];
+
+        double v = bytes;
+        int u = 0;
+        while (v >= 1024 && u < units.Length - 1)
+        {
+            v /= 1024;
+            u++;
+        }
+
+        return $"{v.ToString("0.##", CultureInfo.InvariantCulture)} {units[u]}";
     }
 }
