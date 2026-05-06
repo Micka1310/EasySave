@@ -63,4 +63,21 @@ public class StateFile
             File.WriteAllText(filePath, json);
         }
     }
+
+    /// <summary>
+    /// Lit tous les états enregistrés (pour affichage console).
+    /// </summary>
+    public List<WorkState> ReadAllStates()
+    {
+        lock (fileLock)
+        {
+            if (!File.Exists(filePath))
+            {
+                return [];
+            }
+
+            string existingContent = File.ReadAllText(filePath);
+            return JsonSerializer.Deserialize<List<WorkState>>(existingContent) ?? [];
+        }
+    }
 }

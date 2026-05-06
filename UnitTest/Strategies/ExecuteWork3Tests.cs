@@ -1,8 +1,8 @@
 using ConsoleStrategyFile;
 using WorkListFile;
 
-// Tests de la classe ExecuteWork3
 [TestClass]
+[DoNotParallelize]
 public class ExecuteWork3Tests
 {
     // Répertoires temporaires pour les tests
@@ -17,6 +17,8 @@ public class ExecuteWork3Tests
         destinationDir = Path.Combine(Path.GetTempPath(), "EasySave_Dest_" + Guid.NewGuid());
         Directory.CreateDirectory(sourceDir);
         Directory.CreateDirectory(destinationDir);
+        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        try { if (File.Exists(worksFile)) File.Delete(worksFile); } catch { }
     }
 
     // Nettoyage : supprimer les répertoires temporaires après chaque test
@@ -45,9 +47,9 @@ public class ExecuteWork3Tests
         Assert.IsNotNull(result);
     }
 
-    // Test : parsing "1;2" → exécute les travaux 1 et 2
+    // Test : parsing « 1 2 » → exécute les travaux 1 et 2
     [TestMethod]
-    public void ParseIndexes_Semicolon_ShouldExecuteTwoWorks()
+    public void ParseIndexes_SpaceSeparated_ShouldExecuteTwoWorks()
     {
         // Arrange — créer un fichier source
         File.WriteAllText(Path.Combine(sourceDir, "file.txt"), "contenu test");
@@ -59,15 +61,15 @@ public class ExecuteWork3Tests
         ExecuteWork3 strategy = new ExecuteWork3();
 
         // Act
-        string result = strategy.Execution(["1;2"], workList);
+        string result = strategy.Execution(["1 2"], workList);
 
         // Assert
         Assert.AreEqual("true", result);
     }
 
-    // Test : parsing "1-2" → exécute les travaux 1 et 2
+    // Test : plusieurs espaces / tabulations entre les numéros
     [TestMethod]
-    public void ParseIndexes_Range_ShouldExecuteRangeOfWorks()
+    public void ParseIndexes_ExtraWhitespace_ShouldExecuteTwoWorks()
     {
         // Arrange
         File.WriteAllText(Path.Combine(sourceDir, "file.txt"), "contenu test");
@@ -79,7 +81,7 @@ public class ExecuteWork3Tests
         ExecuteWork3 strategy = new ExecuteWork3();
 
         // Act
-        string result = strategy.Execution(["1-2"], workList);
+        string result = strategy.Execution(["  1 \t 2  "], workList);
 
         // Assert
         Assert.AreEqual("true", result);

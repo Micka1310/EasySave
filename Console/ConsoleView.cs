@@ -1,10 +1,16 @@
 ﻿namespace ConsoleViewFile;
 
+using ConsoleStrategyFile;
 using LanguageFile;
 using ControllerFile;
+using StateFileLib;
 
 public class ConsoleView
 {
+    private const int OptionDisplayWorks = 1;
+    private const int OptionExecuteWork = 3;
+    private const int OptionDeleteWork = 4;
+
     private readonly Controller _controller;
     private readonly Language _language;
 
@@ -230,22 +236,172 @@ public class ConsoleView
     public void SendInput(int input)
     {
         List<string> parameterMessages = _controller.GetParameterMessage(input);
-        List<string> collectedParameters = new List<string>();
+        string[] fieldValues = new string[parameterMessages.Count];
+        int startFieldIndex = 0;
 
-        foreach (string message in parameterMessages)
+        bool showWorksList = input is OptionExecuteWork or OptionDeleteWork;
+
+        if (input == OptionExecuteWork)
         {
-            string value = GetInput(message);
-            collectedParameters.Add(value);
+            _controller.SetProgressCallback(DisplayLiveProgress);
         }
 
-        string result = _controller.OptionExecuted(input, collectedParameters);
-
-        if (!string.IsNullOrEmpty(result))
+        try
         {
-            Console.WriteLine();
+            while (true)
+            {
+                Console.Clear();
+                DisplayHeader();
+
+                if (showWorksList && parameterMessages.Count > 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.WriteLine(_controller.GetNumberedWorksSummary());
+                    Console.ResetColor();
+                    Console.WriteLine();
+                }
+
+                for (int i = startFieldIndex; i < parameterMessages.Count; i++)
+                {
+                    fieldValues[i] = GetInput(parameterMessages[i]);
+                }
+
+                List<string> collectedParameters = fieldValues.Select(static s => s ?? string.Empty).ToList();
+                string result = _controller.OptionExecuted(input, collectedParameters);
+                WriteActionResult(result, input);
+
+                if (!_language.ShouldPromptAgainForMessage(result))
+                {
+                    break;
+                }
+
+                startFieldIndex = _language.GetRetryFieldIndexForMessage(result) ?? 0;
+
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine($"  {_language.GetString("prompt_retry_input")}");
+                Console.ResetColor();
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine("  Appuyez sur une touche pour corriger votre saisie...");
+                Console.ResetColor();
+                Console.ReadKey(true);
+            }
+        }
+        finally
+        {
+            if (input == OptionExecuteWork)
+            {
+                _controller.SetProgressCallback(null);
+            }
+        }
+    }
+
+    private void DisplayLiveProgress(WorkState state)
+    {
+        Lang lang = _language.GetCurrentLanguage();
+
+        int barWidth = 30;
+        int filled = (int)(state.Progression / 100.0 * barWidth);
+        string bar = new string('█', filled) + new string('░', barWidth - filled);
+
+        string sizeTotal = BackupProgressHelper.FormatBytes(state.TotalSize, lang);
+        string sizeRemaining = BackupProgressHelper.FormatBytes(state.RemainingSize, lang);
+
+        bool done = state.RemainingFiles == 0;
+        string statusLabel = done
+            ? _language.GetString("progress_done")
+            : _language.GetString("progress_status");
+
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("  ────────────────────────────────────────────");
+        Console.ResetColor();
+
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.Write($"  {_language.GetString("progress_job")}: ");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write(state.WorkName);
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write("  │  ");
+        Console.ForegroundColor = done ? ConsoleColor.Green : ConsoleColor.Yellow;
+        Console.WriteLine(statusLabel);
+        Console.ResetColor();
+
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write($"  {_language.GetString("progress_bar")}: ");
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.Write($"[{bar}]");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine($" {state.Progression}%");
+
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write($"  {_language.GetString("progress_files")}: ");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write($"{state.TotalFiles - state.RemainingFiles}/{state.TotalFiles}");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write($"  │  {_language.GetString("progress_size")}: ");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine(sizeTotal);
+
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write($"  {_language.GetString("progress_remaining")}: ");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write($"{state.RemainingFiles} {_language.GetString("progress_files").ToLowerInvariant()}");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write($"  │  ");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine(sizeRemaining);
+
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write($"  {_language.GetString("progress_current_file")}: ");
+        Console.ForegroundColor = ConsoleColor.Gray;
+        string fileName = Path.GetFileName(state.CurrentSourceFile);
+        Console.WriteLine(fileName);
+
+        Console.ResetColor();
+    }
+
+    private void WriteActionResult(string result, int menuOption)
+    {
+        if (string.IsNullOrEmpty(result))
+        {
+            return;
+        }
+
+        Console.WriteLine();
+
+        if (menuOption == OptionDisplayWorks)
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(result);
+            Console.ResetColor();
+            return;
+        }
+
+        bool okGreen =
+            string.Equals(result, "true", StringComparison.OrdinalIgnoreCase)
+            || result == _language.GetString("work_saved")
+            || result == _language.GetString("language_changed_to_fr")
+            || result == _language.GetString("language_changed_to_en")
+            || result == _language.GetString("delete_success");
+
+        if (string.Equals(result, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"  ✗ {result}");
+        }
+        else if (!okGreen)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"  ! {result}");
+        }
+        else
+        {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"  ✓ {result}");
-            Console.ResetColor();
         }
+
+        Console.ResetColor();
     }
 }
