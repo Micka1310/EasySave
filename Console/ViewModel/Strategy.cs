@@ -4,8 +4,7 @@ using System.Globalization;
 using WorkListFile;
 using WorkFile;
 using LanguageFile;
-using LogFileLib;
-using StateFileLib;
+using EasyLog;
 
 public interface IStrategy
 {
@@ -114,8 +113,8 @@ public class CreateWork2 : IStrategy
             CurrentDestinationFile = destination
         });
 
-        LogFile logFile = new LogFile();
-        logFile.WriteLogs(name, source, destination, 0, 0);
+        Logger logger = new Logger();
+        logger.WriteLogs(name, source, destination, 0, 0);
 
         return lang.GetString("work_saved");
     }
@@ -251,7 +250,7 @@ public class ExecuteWork3 : IStrategy
         bool success = true;
 
         StateFile stateFile = new StateFile();
-        LogFile logFile = new LogFile();
+        Logger logger = new Logger();
 
         foreach (string sourceFile in files)
         {
@@ -296,7 +295,7 @@ public class ExecuteWork3 : IStrategy
 
             stateFile.WriteProcess(state);
             OnProgress?.Invoke(state);
-            logFile.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime);
+            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime);
         }
 
         return success;
@@ -331,7 +330,7 @@ public class ExecuteWork3 : IStrategy
         bool success = true;
 
         StateFile stateFile = new StateFile();
-        LogFile logFile = new LogFile();
+        Logger logger = new Logger();
 
         foreach (string sourceFile in filesToCopy)
         {
@@ -376,7 +375,7 @@ public class ExecuteWork3 : IStrategy
 
             stateFile.WriteProcess(state);
             OnProgress?.Invoke(state);
-            logFile.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime);
+            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime);
         }
 
         return success;

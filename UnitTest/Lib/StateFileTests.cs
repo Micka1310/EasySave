@@ -1,4 +1,4 @@
-using StateFileLib;
+using EasyLog;
 
 // Tests de la classe StateFile
 [TestClass]

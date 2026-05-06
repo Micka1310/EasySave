@@ -3,7 +3,7 @@
 using ConsoleStrategyFile;
 using LanguageFile;
 using ControllerFile;
-using StateFileLib;
+using EasyLog;
 
 public class ConsoleView
 {
