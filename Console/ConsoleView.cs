@@ -36,7 +36,11 @@ public class ConsoleView
 
             Console.Clear();
             DisplayHeader();
-            SendInput(choice + 1);
+            bool executed = SendInput(choice + 1);
+            if (!executed)
+            {
+                continue;
+            }
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine("  Appuyez sur une touche pour continuer...");
@@ -222,18 +226,51 @@ public class ConsoleView
         Console.ResetColor();
     }
 
-    private string GetInput(string prompt)
+    private bool TryGetInput(string prompt, out string input)
     {
+        input = string.Empty;
         Console.ForegroundColor = ConsoleColor.Yellow;
         Console.Write($"  {prompt} ");
         Console.ResetColor();
         Console.CursorVisible = true;
-        string input = Console.ReadLine() ?? string.Empty;
-        Console.CursorVisible = false;
-        return input;
+
+        while (true)
+        {
+            ConsoleKeyInfo key = Console.ReadKey(true);
+
+            if (key.Key == ConsoleKey.Escape)
+            {
+                Console.CursorVisible = false;
+                Console.WriteLine();
+                return false;
+            }
+
+            if (key.Key == ConsoleKey.Enter)
+            {
+                Console.WriteLine();
+                Console.CursorVisible = false;
+                return true;
+            }
+
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (input.Length > 0)
+                {
+                    input = input[..^1];
+                    Console.Write("\b \b");
+                }
+                continue;
+            }
+
+            if (!char.IsControl(key.KeyChar))
+            {
+                input += key.KeyChar;
+                Console.Write(key.KeyChar);
+            }
+        }
     }
 
-    public void SendInput(int input)
+    public bool SendInput(int input)
     {
         List<string> parameterMessages = _controller.GetParameterMessage(input);
         string[] fieldValues = new string[parameterMessages.Count];
@@ -263,7 +300,11 @@ public class ConsoleView
 
                 for (int i = startFieldIndex; i < parameterMessages.Count; i++)
                 {
-                    fieldValues[i] = GetInput(parameterMessages[i]);
+                    if (!TryGetInput(parameterMessages[i], out string value))
+                    {
+                        return false;
+                    }
+                    fieldValues[i] = value;
                 }
 
                 List<string> collectedParameters = fieldValues.Select(static s => s ?? string.Empty).ToList();
@@ -287,6 +328,8 @@ public class ConsoleView
                 Console.ResetColor();
                 Console.ReadKey(true);
             }
+
+            return true;
         }
         finally
         {
@@ -386,10 +429,19 @@ public class ConsoleView
             || result == _language.GetString("language_changed_to_en")
             || result == _language.GetString("delete_success");
 
-        if (string.Equals(result, "false", StringComparison.OrdinalIgnoreCase))
+        if (result.StartsWith("false", StringComparison.OrdinalIgnoreCase))
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"  ✗ {result}");
+            string[] lines = result.Split('\n');
+            Console.WriteLine($"  ✗ {lines[0]}");
+            for (int i = 1; i < lines.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(lines[i]))
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"  {lines[i]}");
+                }
+            }
         }
         else if (!okGreen)
         {

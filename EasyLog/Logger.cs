@@ -10,11 +10,13 @@ public class LogEntry
     public string DestinationFile { get; set; } = "";
     public long FileSize { get; set; }
     public long TransferTimeMs { get; set; }
+    public bool Success { get; set; } = true;
+    public string ErrorMessage { get; set; } = "";
 }
 
 public interface ILogger
 {
-    void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs);
+    void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, bool success = true, string errorMessage = "");
 }
 
 public class Logger : ILogger
@@ -32,7 +34,7 @@ public class Logger : ILogger
         logDirectory = directory;
     }
 
-    public void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs)
+    public void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, bool success = true, string errorMessage = "")
     {
         LogEntry entry = new LogEntry
         {
@@ -41,7 +43,9 @@ public class Logger : ILogger
             SourceFile = sourceFile,
             DestinationFile = destinationFile,
             FileSize = fileSize,
-            TransferTimeMs = transferTimeMs
+            TransferTimeMs = transferTimeMs,
+            Success = success,
+            ErrorMessage = errorMessage
         };
 
         string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".json";

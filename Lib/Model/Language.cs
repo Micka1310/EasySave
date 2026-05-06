@@ -39,7 +39,7 @@ public class Language
                 { "delete_input", "Numéro du travail à supprimer :" },
                 { "delete_no_jobs", "Aucun travail à supprimer." },
                 { "delete_success", "Travail supprimé." },
-                { "delete_invalid", "Numéro invalide — aucun travail supprimé." },
+                { "delete_invalid", "Suppression impossible : le numéro ne correspond à aucun travail existant." },
 
                 { "progress_job", "Travail" },
                 { "progress_status", "En cours..." },
@@ -63,16 +63,19 @@ public class Language
                 { "language_changed_to_en", "Langue changée en anglais" },
 
                 { "menu_title", "Choisissez une option :" },
-                { "invalid_option", "Option invalide" },
-                { "prompt_retry_input", "La saisie est invalide — vous pouvez corriger ci-dessous." },
+                { "invalid_option", "Option invalide : choisissez un numéro proposé dans le menu." },
+                { "prompt_retry_input", "Corrigez votre saisie selon le détail de l'erreur affichée ci-dessus." },
 
                 { "error_empty_execute_input", "Saisie vide : entrez au moins un numéro (ex. 1 ou 1 2)." },
                 { "error_no_works_to_execute", "Aucun travail à exécuter : créez d'abord un travail." },
                 { "error_invalid_execute_format", "Format invalide : entrez uniquement des numéros séparés par des espaces (ex. 1 ou 1 2 3)." },
-                { "error_invalid_work_selection", "Sélection invalide : aucun numéro ne correspond à un travail existant." },
+                { "error_invalid_work_selection", "Aucun travail sélectionné : les numéros saisis ne correspondent à aucun travail existant." },
                 { "error_empty_work_name", "Le nom du travail ne peut pas être vide." },
                 { "error_empty_source", "Le répertoire source ne peut pas être vide." },
                 { "error_empty_destination", "Le répertoire de destination ne peut pas être vide." },
+                { "error_source_not_found", "Le répertoire source n'existe pas." },
+                { "error_destination_not_found", "Le répertoire de destination n'existe pas." },
+                { "error_same_source_destination", "La source et la destination doivent être différentes." },
                 { "error_invalid_backup_type", "Type invalide : entrez 1 (complet) ou 2 (différentielle)." },
                 { "error_missing_create_parameters", "Saisie incomplète : nom, source, destination et type sont requis." }
             }
@@ -103,7 +106,7 @@ public class Language
                 { "delete_input", "Job number to delete:" },
                 { "delete_no_jobs", "No jobs to delete." },
                 { "delete_success", "Work deleted." },
-                { "delete_invalid", "Invalid number — no work deleted." },
+                { "delete_invalid", "Delete failed: this number does not match any existing job." },
 
                 { "progress_job", "Job" },
                 { "progress_status", "Running..." },
@@ -127,16 +130,19 @@ public class Language
                 { "language_changed_to_en", "Language changed to English" },
 
                 { "menu_title", "Choose an option:" },
-                { "invalid_option", "Invalid option" },
-                { "prompt_retry_input", "Invalid input — you can correct it below." },
+                { "invalid_option", "Invalid option: choose a number from the menu." },
+                { "prompt_retry_input", "Correct your input using the detailed error shown above." },
 
                 { "error_empty_execute_input", "Empty input: enter at least one number (e.g. 1 or 1 2)." },
                 { "error_no_works_to_execute", "No work to execute: create a work first." },
                 { "error_invalid_execute_format", "Invalid format: enter numbers separated by spaces only (e.g. 1 or 1 2 3)." },
-                { "error_invalid_work_selection", "Invalid selection: no number matches an existing work." },
+                { "error_invalid_work_selection", "No job selected: the entered numbers do not match any existing job." },
                 { "error_empty_work_name", "Work name cannot be empty." },
                 { "error_empty_source", "Source directory cannot be empty." },
                 { "error_empty_destination", "Destination directory cannot be empty." },
+                { "error_source_not_found", "Source directory does not exist." },
+                { "error_destination_not_found", "Destination directory does not exist." },
+                { "error_same_source_destination", "Source and destination must be different." },
                 { "error_invalid_backup_type", "Invalid type: enter 1 (full) or 2 (differential)." },
                 { "error_missing_create_parameters", "Incomplete input: name, source, destination and type are required." }
             }
@@ -183,6 +189,9 @@ public class Language
             "error_empty_work_name",
             "error_empty_source",
             "error_empty_destination",
+            "error_source_not_found",
+            "error_destination_not_found",
+            "error_same_source_destination",
             "error_invalid_backup_type",
             "error_missing_create_parameters",
             "delete_invalid"
@@ -212,6 +221,9 @@ public class Language
         if (message == dict["error_empty_work_name"]) return 0;
         if (message == dict["error_empty_source"]) return 1;
         if (message == dict["error_empty_destination"]) return 2;
+        if (message == dict["error_source_not_found"]) return 1;
+        if (message == dict["error_destination_not_found"]) return 2;
+        if (message == dict["error_same_source_destination"]) return 1;
         if (message == dict["error_invalid_backup_type"]) return 3;
         if (message == dict["invalid_option"]) return 0;
         if (message == dict["delete_invalid"]) return 0;

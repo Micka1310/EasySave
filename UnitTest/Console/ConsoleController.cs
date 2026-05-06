@@ -12,6 +12,22 @@ using System.Diagnostics;
 [DoNotParallelize]
 public sealed class TestConsoleStrategy
 {
+    private static (string source, string destination) CreateValidDirs()
+    {
+        string id = Guid.NewGuid().ToString("N");
+        string source = Path.Combine(Path.GetTempPath(), "EasySave_Test_src_" + id);
+        string destination = Path.Combine(Path.GetTempPath(), "EasySave_Test_dst_" + id);
+        Directory.CreateDirectory(source);
+        Directory.CreateDirectory(destination);
+        return (source, destination);
+    }
+
+    private static void CleanupDirs(string source, string destination)
+    {
+        try { if (Directory.Exists(source)) Directory.Delete(source, true); } catch { }
+        try { if (Directory.Exists(destination)) Directory.Delete(destination, true); } catch { }
+    }
+
     [TestInitialize]
     public void Setup()
     {
@@ -118,26 +134,36 @@ public sealed class TestConsoleStrategy
     public void ExecuteOption_CreateAndDisplay()
     {
         Controller controller = new();
+        (string source1, string destination1) = CreateValidDirs();
+        (string source2, string destination2) = CreateValidDirs();
 
         Trace.WriteLine("[TEST] Scenario complet : creer 2 travaux puis les afficher (FR)");
         Trace.WriteLine("");
 
-        string createResult1 = controller.OptionExecuted(2, ["fichier1", "C:\\source1", "C:\\dest1", "Complet"]);
-        DisplayResult(createResult1);
+        try
+        {
+            string createResult1 = controller.OptionExecuted(2, ["fichier1", source1, destination1, "Complet"]);
+            DisplayResult(createResult1);
 
-        string createResult2 = controller.OptionExecuted(2, ["fichier2", "C:\\source2", "C:\\dest2", "Différentielle"]);
-        DisplayResult(createResult2);
+            string createResult2 = controller.OptionExecuted(2, ["fichier2", source2, destination2, "Différentielle"]);
+            DisplayResult(createResult2);
 
-        Assert.AreEqual("Travaux sauvegardé", createResult1);
-        Assert.AreEqual("Travaux sauvegardé", createResult2);
+            Assert.AreEqual("Travaux sauvegardé", createResult1);
+            Assert.AreEqual("Travaux sauvegardé", createResult2);
 
-        string displayResult = controller.OptionExecuted(1, []);
-        DisplayResult(displayResult);
+            string displayResult = controller.OptionExecuted(1, []);
+            DisplayResult(displayResult);
 
-        StringAssert.Contains(displayResult, "fichier1");
-        StringAssert.Contains(displayResult, "fichier2");
-        StringAssert.Contains(displayResult, "C:\\source1");
-        StringAssert.Contains(displayResult, "C:\\dest2");
+            StringAssert.Contains(displayResult, "fichier1");
+            StringAssert.Contains(displayResult, "fichier2");
+            StringAssert.Contains(displayResult, source1);
+            StringAssert.Contains(displayResult, destination2);
+        }
+        finally
+        {
+            CleanupDirs(source1, destination1);
+            CleanupDirs(source2, destination2);
+        }
     }
 
     [TestMethod]
@@ -185,14 +211,22 @@ public sealed class TestConsoleStrategy
     {
         Language.GetInstance().SetLanguage(Lang.EN);
         Controller controller = new();
+        (string source, string destination) = CreateValidDirs();
 
-        string createResult = controller.OptionExecuted(2, ["myFile", "C:\\src", "C:\\dst", "Full"]);
-        Assert.AreEqual("Work saved", createResult);
+        try
+        {
+            string createResult = controller.OptionExecuted(2, ["myFile", source, destination, "Full"]);
+            Assert.AreEqual("Work saved", createResult);
 
-        string displayResult = controller.OptionExecuted(1, []);
-        StringAssert.Contains(displayResult, "myFile");
-        StringAssert.Contains(displayResult, "File name");
-        StringAssert.Contains(displayResult, "Source directory");
+            string displayResult = controller.OptionExecuted(1, []);
+            StringAssert.Contains(displayResult, "myFile");
+            StringAssert.Contains(displayResult, "File name");
+            StringAssert.Contains(displayResult, "Source directory");
+        }
+        finally
+        {
+            CleanupDirs(source, destination);
+        }
     }
 
     [TestMethod]
@@ -203,6 +237,7 @@ public sealed class TestConsoleStrategy
         string tempSrc = Path.Combine(Path.GetTempPath(), "EasySaveExecTest_src_" + id);
         string tempDst = Path.Combine(Path.GetTempPath(), "EasySaveExecTest_dst_" + id);
         Directory.CreateDirectory(tempSrc);
+        Directory.CreateDirectory(tempDst);
         File.WriteAllText(Path.Combine(tempSrc, "test.txt"), "easy");
 
         try
@@ -233,13 +268,21 @@ public sealed class TestConsoleStrategy
     public void ExecuteOption3_InvalidInput_ReturnsFormatError()
     {
         Controller controller = new();
-        controller.OptionExecuted(2, ["w", "C:\\a", "C:\\b", "1"]);
+        (string source, string destination) = CreateValidDirs();
+        try
+        {
+            controller.OptionExecuted(2, ["w", source, destination, "1"]);
 
-        string bad = controller.OptionExecuted(3, ["abc"]);
-        StringAssert.Contains(bad, "Format");
+            string bad = controller.OptionExecuted(3, ["abc"]);
+            StringAssert.Contains(bad, "Format");
 
-        string badFr = controller.OptionExecuted(3, ["1 abc"]);
-        StringAssert.Contains(badFr, "Format");
+            string badFr = controller.OptionExecuted(3, ["1 abc"]);
+            StringAssert.Contains(badFr, "Format");
+        }
+        finally
+        {
+            CleanupDirs(source, destination);
+        }
     }
 
     [TestMethod]
@@ -254,31 +297,56 @@ public sealed class TestConsoleStrategy
     public void CreateWork_InvalidType_ReturnsError()
     {
         Controller controller = new();
-        string result = controller.OptionExecuted(2, ["n", "C:\\s", "C:\\d", "typo"]);
-        StringAssert.Contains(result, "Type");
+        (string source, string destination) = CreateValidDirs();
+        try
+        {
+            string result = controller.OptionExecuted(2, ["n", source, destination, "typo"]);
+            StringAssert.Contains(result, "Type");
+        }
+        finally
+        {
+            CleanupDirs(source, destination);
+        }
     }
 
     [TestMethod]
     public void CreateWork_EmptyName_ReturnsError()
     {
         Controller controller = new();
-        string result = controller.OptionExecuted(2, ["   ", "C:\\s", "C:\\d", "1"]);
+        (string source, string destination) = CreateValidDirs();
+        string result = controller.OptionExecuted(2, ["   ", source, destination, "1"]);
         StringAssert.Contains(result, "nom");
+        CleanupDirs(source, destination);
     }
 
     [TestMethod]
     public void CreateWork_Max5_ReturnsError()
     {
         Controller controller = new();
+        List<(string source, string destination)> dirs = [];
 
-        for (int i = 1; i <= 5; i++)
+        try
         {
-            string res = controller.OptionExecuted(2, [$"fichier{i}", $"C:\\src{i}", $"C:\\dst{i}", "1"]);
-            Assert.AreEqual("Travaux sauvegardé", res);
-        }
+            for (int i = 1; i <= 5; i++)
+            {
+                (string source, string destination) = CreateValidDirs();
+                dirs.Add((source, destination));
+                string res = controller.OptionExecuted(2, [$"fichier{i}", source, destination, "1"]);
+                Assert.AreEqual("Travaux sauvegardé", res);
+            }
 
-        string result = controller.OptionExecuted(2, ["fichier6", "C:\\src6", "C:\\dst6", "1"]);
-        Assert.AreEqual("Maximum de 5 travaux atteint", result);
+            (string source6, string destination6) = CreateValidDirs();
+            dirs.Add((source6, destination6));
+            string result = controller.OptionExecuted(2, ["fichier6", source6, destination6, "1"]);
+            Assert.AreEqual("Maximum de 5 travaux atteint", result);
+        }
+        finally
+        {
+            foreach ((string source, string destination) in dirs)
+            {
+                CleanupDirs(source, destination);
+            }
+        }
     }
 
     [TestMethod]
@@ -298,7 +366,8 @@ public sealed class TestConsoleStrategy
     public void DeleteWork_RemovesWork()
     {
         Controller controller = new();
-        controller.OptionExecuted(2, ["toDelete", "C:\\s", "C:\\d", "1"]);
+        (string source, string destination) = CreateValidDirs();
+        controller.OptionExecuted(2, ["toDelete", source, destination, "1"]);
 
         string display = controller.OptionExecuted(1, []);
         StringAssert.Contains(display, "toDelete");
@@ -308,15 +377,18 @@ public sealed class TestConsoleStrategy
 
         string after = controller.OptionExecuted(1, []);
         Assert.AreEqual("", after);
+        CleanupDirs(source, destination);
     }
 
     [TestMethod]
     public void DeleteWork_InvalidIndex_ReturnsError()
     {
         Controller controller = new();
-        controller.OptionExecuted(2, ["tmp", "C:\\a", "C:\\b", "1"]);
+        (string source, string destination) = CreateValidDirs();
+        controller.OptionExecuted(2, ["tmp", source, destination, "1"]);
         string result = controller.OptionExecuted(4, ["99"]);
         Assert.AreEqual(Language.GetInstance().GetString("delete_invalid"), result);
+        CleanupDirs(source, destination);
     }
 
     [TestMethod]
@@ -331,11 +403,13 @@ public sealed class TestConsoleStrategy
     public void WorksPersistAfterNewController()
     {
         Controller controller1 = new();
-        controller1.OptionExecuted(2, ["persist", "C:\\p1", "C:\\p2", "1"]);
+        (string source, string destination) = CreateValidDirs();
+        controller1.OptionExecuted(2, ["persist", source, destination, "1"]);
 
         Controller controller2 = new();
         string display = controller2.OptionExecuted(1, []);
         StringAssert.Contains(display, "persist");
+        CleanupDirs(source, destination);
     }
 }
 
@@ -457,7 +531,8 @@ public sealed class TestLanguage
             "menu_title", "invalid_option", "prompt_retry_input",
             "error_empty_execute_input", "error_no_works_to_execute", "error_invalid_execute_format",
             "error_invalid_work_selection", "error_empty_work_name", "error_empty_source",
-            "error_empty_destination",
+            "error_empty_destination", "error_source_not_found", "error_destination_not_found",
+            "error_same_source_destination",
             "error_invalid_backup_type", "error_missing_create_parameters"
         ];
 

@@ -90,6 +90,23 @@ public class CreateWork2 : IStrategy
             return lang.GetString("error_empty_destination");
         }
 
+        if (!Directory.Exists(source))
+        {
+            return lang.GetString("error_source_not_found");
+        }
+
+        if (!Directory.Exists(destination))
+        {
+            return lang.GetString("error_destination_not_found");
+        }
+
+        string sourceFullPath = Path.GetFullPath(source).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string destinationFullPath = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (string.Equals(sourceFullPath, destinationFullPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return lang.GetString("error_same_source_destination");
+        }
+
         if (!TryNormalizeBackupType(typeRaw, out string typeNormalized))
         {
             return lang.GetString("error_invalid_backup_type");
@@ -176,22 +193,39 @@ public class ExecuteWork3 : IStrategy
         }
 
         bool success = true;
+        List<string> errors = [];
 
         foreach (int index in indexes)
         {
             Work work = workList.GetWork()[index];
+            List<string> jobErrors = [];
 
             if (work.GetWorkType() == "1")
             {
-                if (!ExecuteFullBackup(work)) success = false;
+                if (!ExecuteFullBackup(work, jobErrors)) success = false;
             }
             else
             {
-                if (!ExecuteDifferentialBackup(work)) success = false;
+                if (!ExecuteDifferentialBackup(work, jobErrors)) success = false;
+            }
+
+            foreach (string err in jobErrors)
+            {
+                errors.Add($"[{work.GetName()}] {err}");
             }
         }
 
-        return success.ToString().ToLowerInvariant();
+        if (success)
+        {
+            return "true";
+        }
+
+        string summary = "false\n";
+        foreach (string err in errors)
+        {
+            summary += $"  - {err}\n";
+        }
+        return summary.TrimEnd();
     }
 
     private static bool TryParseIndexes(string input, int workCount, out List<int> indexes, out string? errorKey)
@@ -234,10 +268,11 @@ public class ExecuteWork3 : IStrategy
         return true;
     }
 
-    private bool ExecuteFullBackup(Work work)
+    private bool ExecuteFullBackup(Work work, List<string> errors)
     {
         if (!Directory.Exists(work.GetSourceDirectory()))
         {
+            errors.Add($"Dossier source introuvable : {work.GetSourceDirectory()}");
             return false;
         }
 
@@ -261,6 +296,8 @@ public class ExecuteWork3 : IStrategy
 
             long fileSize = new FileInfo(sourceFile).Length;
             long transferTime;
+            bool fileSuccess = true;
+            string errorMsg = "";
 
             try
             {
@@ -269,9 +306,12 @@ public class ExecuteWork3 : IStrategy
                 watch.Stop();
                 transferTime = watch.ElapsedMilliseconds;
             }
-            catch
+            catch (Exception ex)
             {
                 transferTime = -1;
+                fileSuccess = false;
+                errorMsg = ex.Message;
+                errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
                 success = false;
             }
 
@@ -295,16 +335,17 @@ public class ExecuteWork3 : IStrategy
 
             stateFile.WriteProcess(state);
             OnProgress?.Invoke(state);
-            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime);
+            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, fileSuccess, errorMsg);
         }
 
         return success;
     }
 
-    private bool ExecuteDifferentialBackup(Work work)
+    private bool ExecuteDifferentialBackup(Work work, List<string> errors)
     {
         if (!Directory.Exists(work.GetSourceDirectory()))
         {
+            errors.Add($"Dossier source introuvable : {work.GetSourceDirectory()}");
             return false;
         }
 
@@ -341,6 +382,8 @@ public class ExecuteWork3 : IStrategy
 
             long fileSize = new FileInfo(sourceFile).Length;
             long transferTime;
+            bool fileSuccess = true;
+            string errorMsg = "";
 
             try
             {
@@ -349,9 +392,12 @@ public class ExecuteWork3 : IStrategy
                 watch.Stop();
                 transferTime = watch.ElapsedMilliseconds;
             }
-            catch
+            catch (Exception ex)
             {
                 transferTime = -1;
+                fileSuccess = false;
+                errorMsg = ex.Message;
+                errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
                 success = false;
             }
 
@@ -375,7 +421,7 @@ public class ExecuteWork3 : IStrategy
 
             stateFile.WriteProcess(state);
             OnProgress?.Invoke(state);
-            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime);
+            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, fileSuccess, errorMsg);
         }
 
         return success;

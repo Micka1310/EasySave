@@ -147,7 +147,8 @@ public class ExecuteWork3Tests
         // Act
         string result = strategy.Execution(["1"], workList);
 
-        // Assert — doit retourner "false" sans lever d'exception
-        Assert.AreEqual("false", result, "Doit retourner false si le répertoire source n'existe pas.");
+        // Assert — doit commencer par "false" avec le détail de l'erreur
+        Assert.StartsWith("false", result, "Doit commencer par false si le répertoire source n'existe pas.");
+        Assert.Contains("introuvable", result, "Doit contenir le détail de l'erreur.");
     }
 }
