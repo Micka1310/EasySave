@@ -9,7 +9,7 @@ public class LogFileTests
     public void WriteLogs_ValidEntry_ShouldCreateLogFile()
     {
         // Arrange
-        Logger logger = new Logger();
+        Logger logger = new Logger(AppContext.BaseDirectory);
         string expectedFileName = DateTime.Now.ToString("yyyy-MM-dd") + ".json";
         string expectedPath = Path.Combine(AppContext.BaseDirectory, expectedFileName);
 
@@ -25,7 +25,7 @@ public class LogFileTests
     public void WriteLogs_MultipleEntries_ShouldAppendToSameFile()
     {
         // Arrange
-        Logger logger = new Logger();
+        Logger logger = new Logger(AppContext.BaseDirectory);
         string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".json";
         string filePath = Path.Combine(AppContext.BaseDirectory, fileName);
 
@@ -44,7 +44,7 @@ public class LogFileTests
     public void WriteLogs_NegativeTransferTime_ShouldWriteEntry()
     {
         // Arrange
-        Logger logger = new Logger();
+        Logger logger = new Logger(AppContext.BaseDirectory);
 
         // Act - aucune exception ne doit être levée
         logger.WriteLogs("ErrorWork", @"\\server\source\file.txt", @"\\server\dest\file.txt", 0, -1);

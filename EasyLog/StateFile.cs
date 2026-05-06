@@ -23,7 +23,11 @@ public class StateFile
 
     public StateFile()
     {
-        filePath = Path.Combine(AppContext.BaseDirectory, "state.json");
+        // Les fichiers state sont stockés dans C:\EasyLog sur la machine de l'utilisateur
+        string stateDir = @"C:\EasyLog";
+        // Créer le dossier s'il n'existe pas encore
+        Directory.CreateDirectory(stateDir);
+        filePath = Path.Combine(stateDir, "state.json");
     }
 
     public void WriteProcess(WorkState workState)

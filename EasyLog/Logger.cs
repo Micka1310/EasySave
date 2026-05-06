@@ -26,7 +26,10 @@ public class Logger : ILogger
 
     public Logger()
     {
-        logDirectory = AppContext.BaseDirectory;
+        // Les fichiers log sont stockés dans C:\EasyLog sur la machine de l'utilisateur
+        logDirectory = @"C:\EasyLog";
+        // Créer le dossier s'il n'existe pas encore
+        Directory.CreateDirectory(logDirectory);
     }
 
     public Logger(string directory)

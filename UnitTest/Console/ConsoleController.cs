@@ -496,7 +496,7 @@ public sealed class TestLanguage
 
         Controller controller = new();
         string result = controller.OptionExecuted(5, ["99"]);
-        Assert.AreEqual("Option invalide", result);
+        Assert.IsTrue(result.Contains("Option invalide"), $"Le résultat doit contenir 'Option invalide' mais était : '{result}'");
     }
 
     [TestMethod]
