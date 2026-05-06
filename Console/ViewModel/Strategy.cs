@@ -1,5 +1,6 @@
 ﻿namespace ConsoleStrategyFile;
 
+using System.Globalization;
 using WorkListFile;
 
 public interface IStrategy
