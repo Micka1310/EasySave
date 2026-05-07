@@ -2,7 +2,8 @@
 
 using ConsoleStrategyFile;
 using LanguageFile;
-using EasyLog;
+using WorkListFile;
+using System.Globalization;
 
 // Option 5 : change the language
 public class ChangeLanguage5 : IStrategy

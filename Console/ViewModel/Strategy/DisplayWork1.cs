@@ -1,6 +1,4 @@
-﻿using System;
-using System.Globalization;
-using ConsoleStrategyFile
+﻿using ConsoleStrategyFile;
 using WorkListFile;
 using WorkFile;
 using LanguageFile;

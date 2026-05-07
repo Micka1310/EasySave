@@ -1,9 +1,10 @@
 ﻿namespace ConsoleViewFile;
 
-using ConsoleStrategyFile;
 using LanguageFile;
+using ChangeLanguage5File;
 using ControllerFile;
 using EasyLog;
+
 
 public class ConsoleView
 {
