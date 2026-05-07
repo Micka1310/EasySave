@@ -1,6 +1,7 @@
 ﻿/* 
  * Command line for testing :
  * dotnet test --logger "console;verbosity=detailed"
+ * dotnet test --filter "FullyQualifiedName~Namespace.NomDeClasse.NomDeMéthode"
  * dotnet test
 */
 
@@ -427,6 +428,7 @@ public sealed class TestLanguage
     public void DefaultLanguage_IsFrench()
     {
         Language lang = Language.GetInstance();
+
         Assert.AreEqual(Lang.FR, lang.GetCurrentLanguage());
     }
 
@@ -434,6 +436,7 @@ public sealed class TestLanguage
     public void GetString_French_ReturnsCorrectValue()
     {
         Language lang = Language.GetInstance();
+
         Assert.AreEqual("Afficher les travaux", lang.GetString("option_display"));
         Assert.AreEqual("Travaux sauvegardé", lang.GetString("work_saved"));
         Assert.AreEqual("Choisissez une option :", lang.GetString("menu_title"));
@@ -468,6 +471,7 @@ public sealed class TestLanguage
     {
         Language lang1 = Language.GetInstance();
         Language lang2 = Language.GetInstance();
+
         Assert.AreSame(lang1, lang2);
     }
 
@@ -496,7 +500,7 @@ public sealed class TestLanguage
 
         Controller controller = new();
         string result = controller.OptionExecuted(5, ["99"]);
-        Assert.IsTrue(result.Contains("Option invalide"), $"Le résultat doit contenir 'Option invalide' mais était : '{result}'");
+        Assert.Contains("Option invalide", result);
     }
 
     [TestMethod]
