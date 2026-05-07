@@ -5,7 +5,6 @@ using ChangeLanguage5File;
 using ControllerFile;
 using EasyLog;
 
-
 public class ConsoleView
 {
     private const int OptionDisplayWorks = 1;

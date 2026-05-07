@@ -428,6 +428,7 @@ public sealed class TestLanguage
     public void DefaultLanguage_IsFrench()
     {
         Language lang = Language.GetInstance();
+
         Assert.AreEqual(Lang.FR, lang.GetCurrentLanguage());
     }
 
@@ -435,6 +436,7 @@ public sealed class TestLanguage
     public void GetString_French_ReturnsCorrectValue()
     {
         Language lang = Language.GetInstance();
+
         Assert.AreEqual("Afficher les travaux", lang.GetString("option_display"));
         Assert.AreEqual("Travaux sauvegardé", lang.GetString("work_saved"));
         Assert.AreEqual("Choisissez une option :", lang.GetString("menu_title"));
@@ -469,6 +471,7 @@ public sealed class TestLanguage
     {
         Language lang1 = Language.GetInstance();
         Language lang2 = Language.GetInstance();
+
         Assert.AreSame(lang1, lang2);
     }
 
