@@ -1,4 +1,6 @@
-﻿using LibFile;
+﻿using ControllerFile;
+using ConsoleViewFile;
 
-Library class1 = new Library();
-class1.Test1();
+Controller controller = new Controller();
+ConsoleView view = new ConsoleView(controller);
+view.Run();

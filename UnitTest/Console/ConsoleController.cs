@@ -1,6 +1,7 @@
 ﻿/* 
  * Command line for testing :
  * dotnet test --logger "console;verbosity=detailed"
+ * dotnet test --filter "FullyQualifiedName~Namespace.NomDeClasse.NomDeMéthode"
  * dotnet test
 */
 
@@ -12,10 +13,28 @@ using System.Diagnostics;
 [DoNotParallelize]
 public sealed class TestConsoleStrategy
 {
+    private static (string source, string destination) CreateValidDirs()
+    {
+        string id = Guid.NewGuid().ToString("N");
+        string source = Path.Combine(Path.GetTempPath(), "EasySave_Test_src_" + id);
+        string destination = Path.Combine(Path.GetTempPath(), "EasySave_Test_dst_" + id);
+        Directory.CreateDirectory(source);
+        Directory.CreateDirectory(destination);
+        return (source, destination);
+    }
+
+    private static void CleanupDirs(string source, string destination)
+    {
+        try { if (Directory.Exists(source)) Directory.Delete(source, true); } catch { }
+        try { if (Directory.Exists(destination)) Directory.Delete(destination, true); } catch { }
+    }
+
     [TestInitialize]
     public void Setup()
     {
         Language.Reset();
+        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        if (File.Exists(worksFile)) File.Delete(worksFile);
     }
 
     private void DisplayMenu(Controller controller)
@@ -65,17 +84,19 @@ public sealed class TestConsoleStrategy
     public void GetOption_ReturnsAllOptions()
     {
         Controller controller = new();
+        Language lang = Language.GetInstance();
 
         Trace.WriteLine("[TEST] Affichage du menu principal (FR)");
         DisplayMenu(controller);
 
         List<string> options = controller.GetOption();
 
-        Assert.HasCount(4, options);
+        Assert.HasCount(5, options);
         Assert.AreEqual("Afficher les travaux", options[0]);
         Assert.AreEqual("Créer un nouveau travaux", options[1]);
         Assert.AreEqual("Exécuter un travaux", options[2]);
-        Assert.AreEqual("Changer la langue", options[3]);
+        Assert.AreEqual(lang.GetString("option_delete"), options[3]);
+        Assert.AreEqual(lang.GetString("option_language"), options[4]);
     }
 
     [TestMethod]
@@ -99,17 +120,11 @@ public sealed class TestConsoleStrategy
     }
 
     [TestMethod]
-    public void GetParameter_Option4_Returns1Message()
+    public void GetParameter_Option5_Returns1Message_Language()
     {
         Controller controller = new();
 
-        Trace.WriteLine("[TEST] Prompts de saisie pour Option 4 : Changer la langue (FR)");
-        DisplayMenu(controller);
-        Trace.WriteLine("Utilisateur choisit : 4");
-        Trace.WriteLine("");
-        DisplayParameterPrompts(controller, 4);
-
-        List<string> parameters = controller.GetParameterMessage(4);
+        List<string> parameters = controller.GetParameterMessage(5);
 
         Assert.HasCount(1, parameters);
         StringAssert.Contains(parameters[0], "FR");
@@ -120,79 +135,61 @@ public sealed class TestConsoleStrategy
     public void ExecuteOption_CreateAndDisplay()
     {
         Controller controller = new();
+        (string source1, string destination1) = CreateValidDirs();
+        (string source2, string destination2) = CreateValidDirs();
 
         Trace.WriteLine("[TEST] Scenario complet : creer 2 travaux puis les afficher (FR)");
         Trace.WriteLine("");
 
-        // Création travail 1
-        DisplayMenu(controller);
-        Trace.WriteLine("Utilisateur choisit : 2");
-        Trace.WriteLine("");
-        DisplayParameterPrompts(controller, 2);
-        Trace.WriteLine("  -> fichier1");
-        Trace.WriteLine("  -> C:\\source1");
-        Trace.WriteLine("  -> C:\\dest1");
-        Trace.WriteLine("  -> Complet");
-        string createResult1 = controller.OptionExecuted(2, ["fichier1", "C:\\source1", "C:\\dest1", "Complet"]);
-        DisplayResult(createResult1);
+        try
+        {
+            string createResult1 = controller.OptionExecuted(2, ["fichier1", source1, destination1, "Complet"]);
+            DisplayResult(createResult1);
 
-        // Création travail 2
-        DisplayMenu(controller);
-        Trace.WriteLine("Utilisateur choisit : 2");
-        Trace.WriteLine("");
-        DisplayParameterPrompts(controller, 2);
-        Trace.WriteLine("  -> fichier2");
-        Trace.WriteLine("  -> C:\\source2");
-        Trace.WriteLine("  -> C:\\dest2");
-        Trace.WriteLine("  -> Différentielle");
-        string createResult2 = controller.OptionExecuted(2, ["fichier2", "C:\\source2", "C:\\dest2", "Différentielle"]);
-        DisplayResult(createResult2);
+            string createResult2 = controller.OptionExecuted(2, ["fichier2", source2, destination2, "Différentielle"]);
+            DisplayResult(createResult2);
 
-        Assert.AreEqual("Travaux sauvegardé", createResult1);
-        Assert.AreEqual("Travaux sauvegardé", createResult2);
+            Assert.AreEqual("Travaux sauvegardé", createResult1);
+            Assert.AreEqual("Travaux sauvegardé", createResult2);
 
-        // Affichage des travaux
-        DisplayMenu(controller);
-        Trace.WriteLine("Utilisateur choisit : 1");
-        string displayResult = controller.OptionExecuted(1, []);
-        DisplayResult(displayResult);
+            string displayResult = controller.OptionExecuted(1, []);
+            DisplayResult(displayResult);
 
-        StringAssert.Contains(displayResult, "fichier1");
-        StringAssert.Contains(displayResult, "fichier2");
-        StringAssert.Contains(displayResult, "C:\\source1");
-        StringAssert.Contains(displayResult, "C:\\dest2");
+            StringAssert.Contains(displayResult, "fichier1");
+            StringAssert.Contains(displayResult, "fichier2");
+            StringAssert.Contains(displayResult, source1);
+            StringAssert.Contains(displayResult, destination2);
+        }
+        finally
+        {
+            CleanupDirs(source1, destination1);
+            CleanupDirs(source2, destination2);
+        }
     }
 
     [TestMethod]
     public void DisplayOption_EmptyList_ReturnsEmptyString()
     {
         Controller controller = new();
-
-        Trace.WriteLine("[TEST] Affichage des travaux quand la liste est vide (FR)");
-        DisplayMenu(controller);
-        Trace.WriteLine("Utilisateur choisit : 1");
         string result = controller.OptionExecuted(1, []);
-        DisplayResult(result);
-
         Assert.AreEqual("", result);
     }
 
     [TestMethod]
     public void GetOption_InEnglish_ReturnsEnglishOptions()
     {
-        Language.GetInstance().SetLanguage(Lang.EN);
+        Language lang = Language.GetInstance();
+        lang.SetLanguage(Lang.EN);
         Controller controller = new();
-
-        Trace.WriteLine("[TEST] Affichage du menu principal (EN)");
-        DisplayMenu(controller);
 
         List<string> options = controller.GetOption();
 
-        Assert.HasCount(4, options);
+        Assert.HasCount(5, options);
         Assert.AreEqual("Display works", options[0]);
         Assert.AreEqual("Create a new work", options[1]);
         Assert.AreEqual("Execute a work", options[2]);
-        Assert.AreEqual("Change language", options[3]);
+        Assert.AreEqual(lang.GetString("option_delete"), options[3]);
+        Assert.AreEqual(lang.GetString("option_language"), options[4]);
     }
 
     [TestMethod]
@@ -200,12 +197,6 @@ public sealed class TestConsoleStrategy
     {
         Language.GetInstance().SetLanguage(Lang.EN);
         Controller controller = new();
-
-        Trace.WriteLine("[TEST] Prompts de saisie pour Option 2 : Create a new work (EN)");
-        DisplayMenu(controller);
-        Trace.WriteLine("User selects: 2");
-        Trace.WriteLine("");
-        DisplayParameterPrompts(controller, 2);
 
         List<string> parameters = controller.GetParameterMessage(2);
 
@@ -221,68 +212,142 @@ public sealed class TestConsoleStrategy
     {
         Language.GetInstance().SetLanguage(Lang.EN);
         Controller controller = new();
+        (string source, string destination) = CreateValidDirs();
 
-        Trace.WriteLine("[TEST] Scenario complet en anglais : creer 1 travail puis afficher (EN)");
-        Trace.WriteLine("");
+        try
+        {
+            string createResult = controller.OptionExecuted(2, ["myFile", source, destination, "Full"]);
+            Assert.AreEqual("Work saved", createResult);
 
-        // Création
-        DisplayMenu(controller);
-        Trace.WriteLine("User selects: 2");
-        Trace.WriteLine("");
-        DisplayParameterPrompts(controller, 2);
-        Trace.WriteLine("  -> myFile");
-        Trace.WriteLine("  -> C:\\src");
-        Trace.WriteLine("  -> C:\\dst");
-        Trace.WriteLine("  -> Full");
-        string createResult = controller.OptionExecuted(2, ["myFile", "C:\\src", "C:\\dst", "Full"]);
-        DisplayResult(createResult);
-
-        Assert.AreEqual("Work saved", createResult);
-
-        // Affichage
-        DisplayMenu(controller);
-        Trace.WriteLine("User selects: 1");
-        string displayResult = controller.OptionExecuted(1, []);
-        DisplayResult(displayResult);
-
-        StringAssert.Contains(displayResult, "myFile");
-        StringAssert.Contains(displayResult, "File name");
-        StringAssert.Contains(displayResult, "Source directory");
+            string displayResult = controller.OptionExecuted(1, []);
+            StringAssert.Contains(displayResult, "myFile");
+            StringAssert.Contains(displayResult, "File name");
+            StringAssert.Contains(displayResult, "Source directory");
+        }
+        finally
+        {
+            CleanupDirs(source, destination);
+        }
     }
 
     [TestMethod]
     public void ExecuteOption3_ReturnsResult()
     {
         Controller controller = new();
+        string id = Guid.NewGuid().ToString("N");
+        string tempSrc = Path.Combine(Path.GetTempPath(), "EasySaveExecTest_src_" + id);
+        string tempDst = Path.Combine(Path.GetTempPath(), "EasySaveExecTest_dst_" + id);
+        Directory.CreateDirectory(tempSrc);
+        Directory.CreateDirectory(tempDst);
+        File.WriteAllText(Path.Combine(tempSrc, "test.txt"), "easy");
 
-        Trace.WriteLine("[TEST] Execution Option 3 : Executer un travail (FR)");
-        DisplayMenu(controller);
-        Trace.WriteLine("Utilisateur choisit : 3");
-        Trace.WriteLine("");
-        DisplayParameterPrompts(controller, 3);
-        Trace.WriteLine("  -> 1");
-        string result = controller.OptionExecuted(3, ["1"]);
-        DisplayResult(result);
+        try
+        {
+            string create = controller.OptionExecuted(2, ["execTest", tempSrc, tempDst, "1"]);
+            Assert.AreEqual("Travaux sauvegardé", create);
 
-        Assert.AreEqual("true", result);
+            string result = controller.OptionExecuted(3, ["1"]);
+            Assert.AreEqual("true", result);
+        }
+        finally
+        {
+            try { if (Directory.Exists(tempDst)) Directory.Delete(tempDst, true); } catch { }
+            try { if (Directory.Exists(tempSrc)) Directory.Delete(tempSrc, true); } catch { }
+        }
     }
 
     [TestMethod]
     public void ChangeLanguage_ToFR_WhenAlreadyFR()
     {
         Controller controller = new();
-
-        Trace.WriteLine("[TEST] Changement de langue FR -> FR (FR)");
-        DisplayMenu(controller);
-        Trace.WriteLine("Utilisateur choisit : 4");
-        Trace.WriteLine("");
-        DisplayParameterPrompts(controller, 4);
-        Trace.WriteLine("  -> 1");
-        string result = controller.OptionExecuted(4, ["1"]);
-        DisplayResult(result);
-
-        Assert.AreEqual("Langue changée en Français", result);
+        string result = controller.OptionExecuted(5, ["1"]);
+        Assert.AreEqual(Language.GetInstance().GetString("language_changed_to_fr"), result);
         Assert.AreEqual(Lang.FR, Language.GetInstance().GetCurrentLanguage());
+    }
+
+    [TestMethod]
+    public void ExecuteOption3_InvalidInput_ReturnsFormatError()
+    {
+        Controller controller = new();
+        (string source, string destination) = CreateValidDirs();
+        try
+        {
+            controller.OptionExecuted(2, ["w", source, destination, "1"]);
+
+            string bad = controller.OptionExecuted(3, ["abc"]);
+            StringAssert.Contains(bad, "Format");
+
+            string badFr = controller.OptionExecuted(3, ["1 abc"]);
+            StringAssert.Contains(badFr, "Format");
+        }
+        finally
+        {
+            CleanupDirs(source, destination);
+        }
+    }
+
+    [TestMethod]
+    public void ExecuteOption3_NoWorks_ReturnsMessage()
+    {
+        Controller controller = new();
+        string result = controller.OptionExecuted(3, ["1"]);
+        StringAssert.Contains(result, "travail");
+    }
+
+    [TestMethod]
+    public void CreateWork_InvalidType_ReturnsError()
+    {
+        Controller controller = new();
+        (string source, string destination) = CreateValidDirs();
+        try
+        {
+            string result = controller.OptionExecuted(2, ["n", source, destination, "typo"]);
+            StringAssert.Contains(result, "Type");
+        }
+        finally
+        {
+            CleanupDirs(source, destination);
+        }
+    }
+
+    [TestMethod]
+    public void CreateWork_EmptyName_ReturnsError()
+    {
+        Controller controller = new();
+        (string source, string destination) = CreateValidDirs();
+        string result = controller.OptionExecuted(2, ["   ", source, destination, "1"]);
+        StringAssert.Contains(result, "nom");
+        CleanupDirs(source, destination);
+    }
+
+    [TestMethod]
+    public void CreateWork_Max5_ReturnsError()
+    {
+        Controller controller = new();
+        List<(string source, string destination)> dirs = [];
+
+        try
+        {
+            for (int i = 1; i <= 5; i++)
+            {
+                (string source, string destination) = CreateValidDirs();
+                dirs.Add((source, destination));
+                string res = controller.OptionExecuted(2, [$"fichier{i}", source, destination, "1"]);
+                Assert.AreEqual("Travaux sauvegardé", res);
+            }
+
+            (string source6, string destination6) = CreateValidDirs();
+            dirs.Add((source6, destination6));
+            string result = controller.OptionExecuted(2, ["fichier6", source6, destination6, "1"]);
+            Assert.AreEqual("Maximum de 5 travaux atteint", result);
+        }
+        finally
+        {
+            foreach ((string source, string destination) in dirs)
+            {
+                CleanupDirs(source, destination);
+            }
+        }
     }
 
     [TestMethod]
@@ -290,30 +355,62 @@ public sealed class TestConsoleStrategy
     {
         Controller controller = new();
 
-        Trace.WriteLine("[TEST] Scenario complet : changement FR -> EN puis affichage du menu");
-        Trace.WriteLine("");
-
-        // Menu en FR
-        Trace.WriteLine("--- Avant changement ---");
-        DisplayMenu(controller);
-
-        // Changement de langue
-        Trace.WriteLine("Utilisateur choisit : 4");
-        Trace.WriteLine("");
-        DisplayParameterPrompts(controller, 4);
-        Trace.WriteLine("  -> 2");
-        string result = controller.OptionExecuted(4, ["2"]);
-        DisplayResult(result);
-
+        string result = controller.OptionExecuted(5, ["2"]);
         Assert.AreEqual("Language changed to English", result);
-
-        // Menu en EN
-        Trace.WriteLine("--- Apres changement ---");
-        DisplayMenu(controller);
 
         List<string> options = controller.GetOption();
         Assert.AreEqual("Display works", options[0]);
-        Assert.AreEqual("Change language", options[3]);
+        Assert.AreEqual("Change language", options[4]);
+    }
+
+    [TestMethod]
+    public void DeleteWork_RemovesWork()
+    {
+        Controller controller = new();
+        (string source, string destination) = CreateValidDirs();
+        controller.OptionExecuted(2, ["toDelete", source, destination, "1"]);
+
+        string display = controller.OptionExecuted(1, []);
+        StringAssert.Contains(display, "toDelete");
+
+        string del = controller.OptionExecuted(4, ["1"]);
+        Assert.AreEqual(Language.GetInstance().GetString("delete_success"), del);
+
+        string after = controller.OptionExecuted(1, []);
+        Assert.AreEqual("", after);
+        CleanupDirs(source, destination);
+    }
+
+    [TestMethod]
+    public void DeleteWork_InvalidIndex_ReturnsError()
+    {
+        Controller controller = new();
+        (string source, string destination) = CreateValidDirs();
+        controller.OptionExecuted(2, ["tmp", source, destination, "1"]);
+        string result = controller.OptionExecuted(4, ["99"]);
+        Assert.AreEqual(Language.GetInstance().GetString("delete_invalid"), result);
+        CleanupDirs(source, destination);
+    }
+
+    [TestMethod]
+    public void DeleteWork_NoWorks_ReturnsMessage()
+    {
+        Controller controller = new();
+        string result = controller.OptionExecuted(4, ["1"]);
+        Assert.AreEqual(Language.GetInstance().GetString("delete_no_jobs"), result);
+    }
+
+    [TestMethod]
+    public void WorksPersistAfterNewController()
+    {
+        Controller controller1 = new();
+        (string source, string destination) = CreateValidDirs();
+        controller1.OptionExecuted(2, ["persist", source, destination, "1"]);
+
+        Controller controller2 = new();
+        string display = controller2.OptionExecuted(1, []);
+        StringAssert.Contains(display, "persist");
+        CleanupDirs(source, destination);
     }
 }
 
@@ -381,9 +478,11 @@ public sealed class TestLanguage
     [TestMethod]
     public void ChangeLanguage_ViaController_SwitchesToEnglish()
     {
-        Controller controller = new();
+        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        if (File.Exists(worksFile)) File.Delete(worksFile);
 
-        controller.OptionExecuted(4, ["2"]);
+        Controller controller = new();
+        controller.OptionExecuted(5, ["2"]);
 
         Language lang = Language.GetInstance();
         Assert.AreEqual(Lang.EN, lang.GetCurrentLanguage());
@@ -396,11 +495,12 @@ public sealed class TestLanguage
     [TestMethod]
     public void ChangeLanguage_ViaController_InvalidChoice_ReturnsError()
     {
+        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        if (File.Exists(worksFile)) File.Delete(worksFile);
+
         Controller controller = new();
-
-        string result = controller.OptionExecuted(4, ["99"]);
-
-        Assert.AreEqual("Option invalide", result);
+        string result = controller.OptionExecuted(5, ["99"]);
+        Assert.Contains("Option invalide", result);
     }
 
     [TestMethod]
@@ -421,12 +521,23 @@ public sealed class TestLanguage
         Language lang = Language.GetInstance();
 
         string[] keys = [
-            "option_display", "option_create", "option_execute", "option_language",
+            "option_display", "option_create", "option_execute", "option_delete", "option_language",
             "create_name", "create_source", "create_destination", "create_type",
-            "execute_input", "language_choice",
+            "execute_input", "execute_jobs_header", "execute_no_jobs_yet",
+            "backup_type_short_full", "backup_type_short_diff",
+            "language_choice",
+            "delete_input", "delete_no_jobs", "delete_success", "delete_invalid",
+            "progress_job", "progress_status", "progress_done", "progress_error",
+            "progress_files", "progress_size", "progress_remaining", "progress_bar", "progress_current_file",
             "display_work_title", "display_file_name", "display_source",
             "display_destination", "display_type",
-            "work_saved", "language_changed", "menu_title", "invalid_option"
+            "work_saved", "work_max_reached", "language_changed_to_fr", "language_changed_to_en",
+            "menu_title", "invalid_option", "prompt_retry_input",
+            "error_empty_execute_input", "error_no_works_to_execute", "error_invalid_execute_format",
+            "error_invalid_work_selection", "error_empty_work_name", "error_empty_source",
+            "error_empty_destination", "error_source_not_found", "error_destination_not_found",
+            "error_same_source_destination",
+            "error_invalid_backup_type", "error_missing_create_parameters"
         ];
 
         lang.SetLanguage(Lang.FR);

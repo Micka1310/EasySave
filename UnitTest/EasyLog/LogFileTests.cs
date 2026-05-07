@@ -1,4 +1,4 @@
-using LogFileLib;
+using EasyLog;
 
 // Tests de la classe LogFile
 [TestClass]
@@ -9,12 +9,12 @@ public class LogFileTests
     public void WriteLogs_ValidEntry_ShouldCreateLogFile()
     {
         // Arrange
-        LogFile logFile = new LogFile();
+        Logger logger = new Logger(AppContext.BaseDirectory);
         string expectedFileName = DateTime.Now.ToString("yyyy-MM-dd") + ".json";
         string expectedPath = Path.Combine(AppContext.BaseDirectory, expectedFileName);
 
         // Act
-        logFile.WriteLogs("TestWork", @"\\server\source\file.txt", @"\\server\dest\file.txt", 1024, 150);
+        logger.WriteLogs("TestWork", @"\\server\source\file.txt", @"\\server\dest\file.txt", 1024, 150);
 
         // Assert
         Assert.IsTrue(File.Exists(expectedPath), "Le fichier log doit exister après l'écriture.");
@@ -25,13 +25,13 @@ public class LogFileTests
     public void WriteLogs_MultipleEntries_ShouldAppendToSameFile()
     {
         // Arrange
-        LogFile logFile = new LogFile();
+        Logger logger = new Logger(AppContext.BaseDirectory);
         string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".json";
         string filePath = Path.Combine(AppContext.BaseDirectory, fileName);
 
         // Act
-        logFile.WriteLogs("Work1", @"\\server\source\a.txt", @"\\server\dest\a.txt", 512, 100);
-        logFile.WriteLogs("Work2", @"\\server\source\b.txt", @"\\server\dest\b.txt", 2048, 200);
+        logger.WriteLogs("Work1", @"\\server\source\a.txt", @"\\server\dest\a.txt", 512, 100);
+        logger.WriteLogs("Work2", @"\\server\source\b.txt", @"\\server\dest\b.txt", 2048, 200);
 
         // Assert
         string content = File.ReadAllText(filePath);
@@ -44,10 +44,10 @@ public class LogFileTests
     public void WriteLogs_NegativeTransferTime_ShouldWriteEntry()
     {
         // Arrange
-        LogFile logFile = new LogFile();
+        Logger logger = new Logger(AppContext.BaseDirectory);
 
         // Act - aucune exception ne doit être levée
-        logFile.WriteLogs("ErrorWork", @"\\server\source\file.txt", @"\\server\dest\file.txt", 0, -1);
+        logger.WriteLogs("ErrorWork", @"\\server\source\file.txt", @"\\server\dest\file.txt", 0, -1);
 
         // Assert
         string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".json";

@@ -30,6 +30,13 @@ public sealed class TestWork
 [TestClass]
 public sealed class TestWorkList
 {
+    [TestInitialize]
+    public void Setup()
+    {
+        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        if (File.Exists(worksFile)) File.Delete(worksFile);
+    }
+
     [TestMethod]
     public void WorkList_InitiallyEmpty()
     {
