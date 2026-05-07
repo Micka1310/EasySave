@@ -1,4 +1,4 @@
-﻿using ConsoleStrategyFile;
+using ConsoleStrategyFile;
 using WorkListFile;
 using WorkFile;
 using LanguageFile;
