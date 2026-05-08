@@ -128,6 +128,8 @@ public class WorkItemViewModel : ViewModelBase
             "Active" => lang.GetString("wpf_status_active"),
             "Inactive" => lang.GetString("wpf_status_inactive"),
             "Idle" => lang.GetString("wpf_status_idle"),
+            "Paused" => lang.GetString("wpf_status_paused"),
+            "Cancelled" => lang.GetString("wpf_status_cancelled"),
             _ => key
         };
     }

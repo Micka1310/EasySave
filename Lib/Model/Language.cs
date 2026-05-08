@@ -87,7 +87,14 @@ public class Language
                 { "wpf_backup_full_title", "Sauvegarde complète" },
                 { "wpf_backup_full_desc", "Copie tous les fichiers à chaque exécution." },
                 { "wpf_backup_diff_title", "Sauvegarde différentielle" },
-                { "wpf_backup_diff_desc", "Copie uniquement les fichiers modifiés depuis la dernière complète." }
+                { "wpf_backup_diff_desc", "Copie uniquement les fichiers modifiés depuis la dernière complète." },
+
+                { "wpf_pause", "Pause" },
+                { "wpf_resume", "Reprendre" },
+                { "wpf_stop", "Arrêter" },
+                { "wpf_status_paused", "En pause" },
+                { "wpf_status_cancelled", "Annulé" },
+                { "wpf_backup_stopped", "Sauvegarde interrompue." }
             }
         },
         {
@@ -164,7 +171,14 @@ public class Language
                 { "wpf_backup_full_title", "Full backup" },
                 { "wpf_backup_full_desc", "Copies all files on every run." },
                 { "wpf_backup_diff_title", "Differential backup" },
-                { "wpf_backup_diff_desc", "Copies only files changed since the last full backup." }
+                { "wpf_backup_diff_desc", "Copies only files changed since the last full backup." },
+
+                { "wpf_pause", "Pause" },
+                { "wpf_resume", "Resume" },
+                { "wpf_stop", "Stop" },
+                { "wpf_status_paused", "Paused" },
+                { "wpf_status_cancelled", "Cancelled" },
+                { "wpf_backup_stopped", "Backup stopped." }
             }
         }
     };

@@ -5,12 +5,16 @@ namespace WorkListFile;
 
 public class WorkList
 {
+    /// <summary>Limite par défaut (console, tests). L’app WPF peut augmenter <see cref="MaxWorkCount"/>.</summary>
     public const int MaxWorks = 5;
 
     private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "works.json");
     private static readonly object FileLock = new();
 
     private List<Work> works;
+
+    /// <summary>Nombre maximal de travaux (<see cref="MaxWorks"/> pour la console ; WPF peut utiliser une valeur plus grande).</summary>
+    public int MaxWorkCount { get; set; } = MaxWorks;
 
     public WorkList()
     {
@@ -24,7 +28,7 @@ public class WorkList
 
     public bool IsFull()
     {
-        return works.Count >= MaxWorks;
+        return works.Count >= MaxWorkCount;
     }
 
     public void AddWork(List<string> parameter)

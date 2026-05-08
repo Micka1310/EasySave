@@ -136,30 +136,96 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Style="{StaticResource SecondaryButton}"
-                            Command="{Binding RunSelectedCommand}"
-                            Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="▶" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding LblRunSelected}" />
-                        </StackPanel>
-                    </Button>
-                    <Button Style="{StaticResource SecondaryButton}"
-                            Command="{Binding RunAllCommand}"
-                            Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⏵⏵" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding LblRunAll}" />
-                        </StackPanel>
-                    </Button>
-                    <Button Style="{StaticResource PrimaryButton}"
-                            Command="{Binding CreateWorkCommand}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="+" FontSize="16" FontWeight="Bold"
-                                       Margin="0,0,8,0" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding LblNew}" />
-                        </StackPanel>
-                    </Button>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowMainRunActions}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <Button Style="{StaticResource SecondaryButton}"
+                                Command="{Binding RunSelectedCommand}"
+                                Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="▶" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding LblRunSelected}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SecondaryButton}"
+                                Command="{Binding RunAllCommand}"
+                                Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⏵⏵" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding LblRunAll}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource PrimaryButton}"
+                                Command="{Binding CreateWorkCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="+" FontSize="16" FontWeight="Bold"
+                                           Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding LblNew}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowBackupTransportActions}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <Button Command="{Binding PauseBackupCommand}"
+                                Margin="0,0,8,0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ShowPauseButton}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⏸" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding LblPause}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding ResumeBackupCommand}"
+                                Margin="0,0,8,0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ShowResumeButton}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="▶" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding LblResume}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource DangerButton}"
+                                Command="{Binding StopBackupCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="■" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding LblStop}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
 

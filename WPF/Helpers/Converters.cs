@@ -56,6 +56,8 @@ public class StatusToBrushConverter : IValueConverter
             "Done" => Application.Current.Resources["SuccessBrush"],
             "Inactive" => Application.Current.Resources["TextMutedBrush"],
             "Idle" => Application.Current.Resources["TextMutedBrush"],
+            "Paused" => Application.Current.Resources["WarningBrush"],
+            "Cancelled" => Application.Current.Resources["TextMutedBrush"],
             "Error" => Application.Current.Resources["ErrorBrush"],
             _ => Application.Current.Resources["TextMutedBrush"]
         };

@@ -15,14 +15,24 @@ public class BackupService
     private readonly Logger _logger = new Logger();
     private readonly StateFile _stateFile = new StateFile();
 
-    public bool ExecuteWork(Work work, IProgress<WorkState> progress, List<string> errors)
+    public bool ExecuteWork(
+        Work work,
+        IProgress<WorkState> progress,
+        List<string> errors,
+        CancellationToken cancellationToken = default,
+        Func<bool>? isPaused = null)
     {
         return work.GetWorkType() == "1"
-            ? ExecuteFullBackup(work, progress, errors)
-            : ExecuteDifferentialBackup(work, progress, errors);
+            ? ExecuteFullBackup(work, progress, errors, cancellationToken, isPaused)
+            : ExecuteDifferentialBackup(work, progress, errors, cancellationToken, isPaused);
     }
 
-    private bool ExecuteFullBackup(Work work, IProgress<WorkState> progress, List<string> errors)
+    private bool ExecuteFullBackup(
+        Work work,
+        IProgress<WorkState> progress,
+        List<string> errors,
+        CancellationToken cancellationToken,
+        Func<bool>? isPaused)
     {
         if (!Directory.Exists(work.GetSourceDirectory()))
         {
@@ -31,10 +41,15 @@ public class BackupService
         }
 
         string[] files = Directory.GetFiles(work.GetSourceDirectory(), "*", SearchOption.AllDirectories);
-        return CopyFiles(work, files, progress, errors);
+        return CopyFiles(work, files, progress, errors, cancellationToken, isPaused);
     }
 
-    private bool ExecuteDifferentialBackup(Work work, IProgress<WorkState> progress, List<string> errors)
+    private bool ExecuteDifferentialBackup(
+        Work work,
+        IProgress<WorkState> progress,
+        List<string> errors,
+        CancellationToken cancellationToken,
+        Func<bool>? isPaused)
     {
         if (!Directory.Exists(work.GetSourceDirectory()))
         {
@@ -55,10 +70,30 @@ public class BackupService
             }
         }
 
-        return CopyFiles(work, filesToCopy.ToArray(), progress, errors);
+        return CopyFiles(work, filesToCopy.ToArray(), progress, errors, cancellationToken, isPaused);
     }
 
-    private bool CopyFiles(Work work, string[] files, IProgress<WorkState> progress, List<string> errors)
+    private static void WaitWhilePaused(CancellationToken cancellationToken, Func<bool>? isPaused)
+    {
+        if (isPaused is null)
+        {
+            return;
+        }
+
+        while (isPaused())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Thread.Sleep(50);
+        }
+    }
+
+    private bool CopyFiles(
+        Work work,
+        string[] files,
+        IProgress<WorkState> progress,
+        List<string> errors,
+        CancellationToken cancellationToken,
+        Func<bool>? isPaused)
     {
         int totalFiles = files.Length;
         int remainingFiles = totalFiles;
@@ -66,7 +101,6 @@ public class BackupService
         long remainingSize = totalSize;
         bool success = true;
 
-        // Émet un état initial pour que l'UI affiche la barre/quantité dès le départ.
         progress.Report(new WorkState
         {
             WorkName = work.GetName(),
@@ -81,55 +115,80 @@ public class BackupService
             CurrentDestinationFile = ""
         });
 
-        foreach (string sourceFile in files)
+        try
         {
-            string relativePath = Path.GetRelativePath(work.GetSourceDirectory(), sourceFile);
-            string destinationFile = Path.Combine(work.GetDestinationDirectory(), relativePath);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
-
-            long fileSize = new FileInfo(sourceFile).Length;
-            long transferTime;
-            bool fileSuccess = true;
-            string errorMsg = "";
-
-            try
+            foreach (string sourceFile in files)
             {
-                var watch = System.Diagnostics.Stopwatch.StartNew();
-                File.Copy(sourceFile, destinationFile, true);
-                watch.Stop();
-                transferTime = watch.ElapsedMilliseconds;
+                cancellationToken.ThrowIfCancellationRequested();
+                WaitWhilePaused(cancellationToken, isPaused);
+
+                int progressionBeforeFile = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
+                progress.Report(new WorkState
+                {
+                    WorkName = work.GetName(),
+                    Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    Status = "Active",
+                    TotalFiles = totalFiles,
+                    TotalSize = totalSize,
+                    RemainingFiles = remainingFiles,
+                    RemainingSize = remainingSize,
+                    Progression = progressionBeforeFile,
+                    CurrentSourceFile = "",
+                    CurrentDestinationFile = ""
+                });
+
+                string relativePath = Path.GetRelativePath(work.GetSourceDirectory(), sourceFile);
+                string destinationFile = Path.Combine(work.GetDestinationDirectory(), relativePath);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+
+                long fileSize = new FileInfo(sourceFile).Length;
+                long transferTime;
+                bool fileSuccess = true;
+                string errorMsg = "";
+
+                try
+                {
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    File.Copy(sourceFile, destinationFile, true);
+                    watch.Stop();
+                    transferTime = watch.ElapsedMilliseconds;
+                }
+                catch (Exception ex)
+                {
+                    transferTime = -1;
+                    fileSuccess = false;
+                    errorMsg = ex.Message;
+                    errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
+                    success = false;
+                }
+
+                remainingFiles--;
+                remainingSize -= fileSize;
+                int progression = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
+
+                WorkState state = new WorkState
+                {
+                    WorkName = work.GetName(),
+                    Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    Status = remainingFiles > 0 ? "Active" : "Inactive",
+                    TotalFiles = totalFiles,
+                    TotalSize = totalSize,
+                    RemainingFiles = remainingFiles,
+                    RemainingSize = remainingSize,
+                    Progression = progression,
+                    CurrentSourceFile = sourceFile,
+                    CurrentDestinationFile = destinationFile
+                };
+
+                _stateFile.WriteProcess(state);
+                progress.Report(state);
+                _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, fileSuccess, errorMsg);
             }
-            catch (Exception ex)
-            {
-                transferTime = -1;
-                fileSuccess = false;
-                errorMsg = ex.Message;
-                errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
-                success = false;
-            }
-
-            remainingFiles--;
-            remainingSize -= fileSize;
-            int progression = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
-
-            WorkState state = new WorkState
-            {
-                WorkName = work.GetName(),
-                Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                Status = remainingFiles > 0 ? "Active" : "Inactive",
-                TotalFiles = totalFiles,
-                TotalSize = totalSize,
-                RemainingFiles = remainingFiles,
-                RemainingSize = remainingSize,
-                Progression = progression,
-                CurrentSourceFile = sourceFile,
-                CurrentDestinationFile = destinationFile
-            };
-
-            _stateFile.WriteProcess(state);
-            progress.Report(state);
-            _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, fileSuccess, errorMsg);
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
         }
 
         return success;

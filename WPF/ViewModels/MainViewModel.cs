@@ -30,12 +30,41 @@ public class MainViewModel : ViewModelBase
             if (SetField(ref _isRunning, value))
             {
                 OnPropertyChanged(nameof(CanInteract));
+                RefreshTransportBindings();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
     }
 
     public bool CanInteract => !IsRunning;
+
+    /// <summary>Barre d’actions principale (lancer / nouveau) visible seulement hors exécution.</summary>
+    public bool ShowMainRunActions => !IsRunning;
+
+    /// <summary>Pause / reprise / arrêt visibles pendant une série de sauvegardes v2.</summary>
+    public bool ShowBackupTransportActions => IsRunning;
+
+    private volatile bool _runPaused;
+
+    /// <summary>État pause : lu par le filet d’exécution via callback vers <see cref="BackupService"/>.</summary>
+    public bool IsRunPaused
+    {
+        get => _runPaused;
+        private set
+        {
+            if (_runPaused == value) return;
+            _runPaused = value;
+            OnPropertyChanged(nameof(IsRunPaused));
+            RefreshTransportBindings();
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
+
+    public bool ShowPauseButton => IsRunning && !IsRunPaused;
+    public bool ShowResumeButton => IsRunning && IsRunPaused;
+
+    private CancellationTokenSource? _runCts;
+    private WorkItemViewModel? _currentRunningVm;
 
     private string _statusBanner = "";
     public string StatusBanner
@@ -46,7 +75,7 @@ public class MainViewModel : ViewModelBase
 
     public bool HasStatusBanner => !string.IsNullOrEmpty(StatusBanner);
 
-    private string _statusBannerKind = "info"; // "info" | "success" | "error"
+    private string _statusBannerKind = "info"; // "info" | "success" | "error" | "warning"
     public string StatusBannerKind
     {
         get => _statusBannerKind;
@@ -71,12 +100,17 @@ public class MainViewModel : ViewModelBase
     public ICommand RunSelectedCommand { get; }
     public ICommand RunAllCommand { get; }
     public ICommand DeleteWorkCommand { get; }
+    public ICommand PauseBackupCommand { get; }
+    public ICommand ResumeBackupCommand { get; }
+    public ICommand StopBackupCommand { get; }
 
     public Action<CreateWorkViewModel>? RequestShowCreateDialog { get; set; }
 
     public MainViewModel()
     {
         _workList = new WorkList();
+        _workList.MaxWorkCount = int.MaxValue;
+
         _lang = Language.GetInstance();
         _isFrench = _lang.GetCurrentLanguage() == Lang.FR;
 
@@ -85,10 +119,41 @@ public class MainViewModel : ViewModelBase
             Works.Add(new WorkItemViewModel(w));
         }
 
-        CreateWorkCommand = new RelayCommand(_ => OpenCreateDialog(), _ => CanInteract && Works.Count < WorkList.MaxWorks);
+        CreateWorkCommand = new RelayCommand(_ => OpenCreateDialog(), _ => CanInteract && !_workList.IsFull());
         RunSelectedCommand = new RelayCommand(async _ => await RunWorksAsync(GetSelected()), _ => CanInteract && GetSelected().Any());
         RunAllCommand = new RelayCommand(async _ => await RunWorksAsync(Works.ToList()), _ => CanInteract && Works.Count > 0);
         DeleteWorkCommand = new RelayCommand(p => DeleteWork(p as WorkItemViewModel), _ => CanInteract);
+        PauseBackupCommand = new RelayCommand(_ => PauseBackup(), _ => IsRunning && !IsRunPaused);
+        ResumeBackupCommand = new RelayCommand(_ => ResumeBackup(), _ => IsRunning && IsRunPaused);
+        StopBackupCommand = new RelayCommand(_ => StopBackup(), _ => IsRunning);
+    }
+
+    private void RefreshTransportBindings()
+    {
+        OnPropertyChanged(nameof(ShowMainRunActions));
+        OnPropertyChanged(nameof(ShowBackupTransportActions));
+        OnPropertyChanged(nameof(ShowPauseButton));
+        OnPropertyChanged(nameof(ShowResumeButton));
+    }
+
+    private void PauseBackup()
+    {
+        IsRunPaused = true;
+        if (_currentRunningVm != null)
+            _currentRunningVm.StatusKey = "Paused";
+    }
+
+    private void ResumeBackup()
+    {
+        IsRunPaused = false;
+        if (_currentRunningVm != null)
+            _currentRunningVm.StatusKey = "Active";
+    }
+
+    private void StopBackup()
+    {
+        _runCts?.Cancel();
+        IsRunPaused = false;
     }
 
     // --- Libellés traduits utilisés en binding direct ---
@@ -100,11 +165,14 @@ public class MainViewModel : ViewModelBase
     public string LblNavSettings => IsFrench ? "Paramètres" : "Settings";
     public string LblHeader => IsFrench ? "Mes travaux de sauvegarde" : "My backup jobs";
     public string LblCount => IsFrench
-        ? $"{Works.Count} / {WorkList.MaxWorks} travaux"
-        : $"{Works.Count} / {WorkList.MaxWorks} jobs";
+        ? $"{Works.Count} travaux"
+        : $"{Works.Count} jobs";
     public string LblNew => IsFrench ? "Nouveau" : "New";
     public string LblRunSelected => IsFrench ? "Exécuter la sélection" : "Run selected";
     public string LblRunAll => IsFrench ? "Tout exécuter" : "Run all";
+    public string LblPause => _lang.GetString("wpf_pause");
+    public string LblResume => _lang.GetString("wpf_resume");
+    public string LblStop => _lang.GetString("wpf_stop");
     public string LblEmptyTitle => IsFrench ? "Aucun travail pour le moment" : "No jobs yet";
     public string LblEmptySubtitle => IsFrench
         ? "Créez votre premier travail de sauvegarde pour commencer."
@@ -140,6 +208,9 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblNew));
         OnPropertyChanged(nameof(LblRunSelected));
         OnPropertyChanged(nameof(LblRunAll));
+        OnPropertyChanged(nameof(LblPause));
+        OnPropertyChanged(nameof(LblResume));
+        OnPropertyChanged(nameof(LblStop));
         OnPropertyChanged(nameof(LblEmptyTitle));
         OnPropertyChanged(nameof(LblEmptySubtitle));
         OnPropertyChanged(nameof(LblCreateFirst));
@@ -172,7 +243,6 @@ public class MainViewModel : ViewModelBase
         CreateWorkViewModel vm = new CreateWorkViewModel(_workList);
         vm.CreateRequested += (_, _) =>
         {
-            // Resync depuis la persistance pour éviter d'introduire un setter publique sur WorkList.
             Works.Clear();
             foreach (Work w in _workList.GetWork())
             {
@@ -201,47 +271,83 @@ public class MainViewModel : ViewModelBase
     {
         if (targets.Count == 0 || IsRunning) return;
         IsRunning = true;
+        IsRunPaused = false;
         StatusBanner = "";
 
+        using CancellationTokenSource cts = new CancellationTokenSource();
+        _runCts = cts;
         List<string> errors = [];
+        bool stoppedByUser = false;
 
         try
         {
             foreach (WorkItemViewModel vm in targets)
             {
+                cts.Token.ThrowIfCancellationRequested();
+
+                _currentRunningVm = vm;
                 vm.Reset();
                 vm.StatusKey = "Active";
 
                 Progress<WorkState> reporter = new Progress<WorkState>(state =>
                 {
-                    Application.Current.Dispatcher.Invoke(() => vm.UpdateFromState(state));
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        vm.UpdateFromState(state);
+                        if (IsRunPaused)
+                            vm.StatusKey = "Paused";
+                    });
                 });
 
                 List<string> jobErrors = [];
-                bool ok = await Task.Run(() => _backupService.ExecuteWork(vm.Work, reporter, jobErrors));
+                bool ok = await Task.Run(() => _backupService.ExecuteWork(
+                    vm.Work,
+                    reporter,
+                    jobErrors,
+                    cts.Token,
+                    () => IsRunPaused));
+
+                if (cts.IsCancellationRequested)
+                {
+                    vm.StatusKey = "Cancelled";
+                    stoppedByUser = true;
+                    break;
+                }
+
                 vm.StatusKey = ok ? "Done" : "Error";
 
                 foreach (string e in jobErrors)
-                {
                     errors.Add($"[{vm.Name}] {e}");
-                }
             }
-
-            if (errors.Count == 0)
-            {
-                ShowBanner(IsFrench ? "Sauvegarde terminée avec succès." : "Backup completed successfully.", "success");
-            }
-            else
-            {
-                string head = IsFrench
-                    ? $"Sauvegarde terminée avec {errors.Count} erreur(s)."
-                    : $"Backup finished with {errors.Count} error(s).";
-                ShowBanner(head + "\n" + string.Join("\n", errors.Take(3)), "error");
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            stoppedByUser = true;
         }
         finally
         {
+            _currentRunningVm = null;
+            _runCts = null;
+            IsRunPaused = false;
             IsRunning = false;
+        }
+
+        if (stoppedByUser)
+        {
+            ShowBanner(_lang.GetString("wpf_backup_stopped"), "warning");
+            return;
+        }
+
+        if (errors.Count == 0)
+        {
+            ShowBanner(IsFrench ? "Sauvegarde terminée avec succès." : "Backup completed successfully.", "success");
+        }
+        else
+        {
+            string head = IsFrench
+                ? $"Sauvegarde terminée avec {errors.Count} erreur(s)."
+                : $"Backup finished with {errors.Count} error(s).";
+            ShowBanner(head + "\n" + string.Join("\n", errors.Take(3)), "error");
         }
     }
 
