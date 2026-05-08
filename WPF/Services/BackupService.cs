@@ -1,4 +1,7 @@
 using System.IO;
+using System.Diagnostics;
+using System.Globalization;
+using CryptoSoft;
 using EasyLog;
 using WorkFile;
 
@@ -14,6 +17,7 @@ public class BackupService
 {
     private readonly Logger _logger = new Logger();
     private readonly StateFile _stateFile = new StateFile();
+    private readonly GeneralSettingsService _settingsService = new GeneralSettingsService();
 
     public bool ExecuteWork(
         Work work,
@@ -95,6 +99,7 @@ public class BackupService
         CancellationToken cancellationToken,
         Func<bool>? isPaused)
     {
+        HashSet<string> encryptedExtensions = LoadEncryptedExtensions();
         int totalFiles = files.Length;
         int remainingFiles = totalFiles;
         long totalSize = files.Sum(f => new FileInfo(f).Length);
@@ -144,6 +149,7 @@ public class BackupService
 
                 long fileSize = new FileInfo(sourceFile).Length;
                 long transferTime;
+                long encryptionTime = 0;
                 bool fileSuccess = true;
                 string errorMsg = "";
 
@@ -161,6 +167,34 @@ public class BackupService
                     errorMsg = ex.Message;
                     errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
                     success = false;
+                }
+
+                if (fileSuccess && ShouldEncrypt(sourceFile, encryptedExtensions))
+                {
+                    try
+                    {
+                        encryptionTime = EncryptWithCryptoSoft(destinationFile);
+                    }
+                    catch (CryptoSoftException ex)
+                    {
+                        encryptionTime = ex.ErrorCode;
+                        fileSuccess = false;
+                        errorMsg = string.IsNullOrWhiteSpace(errorMsg)
+                            ? $"Erreur chiffrement : {ex.Message}"
+                            : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
+                        errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
+                        success = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        encryptionTime = -1;
+                        fileSuccess = false;
+                        errorMsg = string.IsNullOrWhiteSpace(errorMsg)
+                            ? $"Erreur chiffrement : {ex.Message}"
+                            : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
+                        errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
+                        success = false;
+                    }
                 }
 
                 remainingFiles--;
@@ -183,7 +217,7 @@ public class BackupService
 
                 _stateFile.WriteProcess(state);
                 progress.Report(state);
-                _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, fileSuccess, errorMsg);
+                _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, encryptionTime, fileSuccess, errorMsg);
             }
         }
         catch (OperationCanceledException)
@@ -206,5 +240,125 @@ public class BackupService
         bool sizeDiffers = sourceInfo.Length != destinationInfo.Length;
         bool timestampDiffers = sourceInfo.LastWriteTimeUtc != destinationInfo.LastWriteTimeUtc;
         return sizeDiffers || timestampDiffers;
+    }
+
+    private HashSet<string> LoadEncryptedExtensions()
+    {
+        GeneralSettings settings = _settingsService.Load();
+        return settings.EncryptedExtensions
+            .Select(NormalizeExtension)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool ShouldEncrypt(string sourceFile, HashSet<string> encryptedExtensions)
+    {
+        string extension = Path.GetExtension(sourceFile);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return false;
+        }
+
+        return encryptedExtensions.Contains(extension);
+    }
+
+    private static string NormalizeExtension(string value)
+    {
+        string trimmed = value.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            return string.Empty;
+        }
+
+        return trimmed.StartsWith('.') ? trimmed : "." + trimmed;
+    }
+
+    private static long EncryptWithCryptoSoft(string destinationFile)
+    {
+        string baseDir = AppContext.BaseDirectory;
+        string[] exeCandidates =
+        [
+            Path.Combine(baseDir, "CryptoSoft.exe"),
+            Path.Combine(baseDir, "CryptoSoft", "CryptoSoft.exe")
+        ];
+
+        foreach (string exePath in exeCandidates)
+        {
+            if (!File.Exists(exePath))
+            {
+                continue;
+            }
+
+            return RunCryptoProcess(exePath, $"--encrypt \"{destinationFile}\"");
+        }
+
+        string[] dllCandidates =
+        [
+            Path.Combine(baseDir, "CryptoSoft.dll"),
+            Path.Combine(baseDir, "CryptoSoft", "CryptoSoft.dll")
+        ];
+
+        foreach (string dllPath in dllCandidates)
+        {
+            if (!File.Exists(dllPath))
+            {
+                continue;
+            }
+
+            return RunCryptoProcess("dotnet", $"\"{dllPath}\" --encrypt \"{destinationFile}\"");
+        }
+
+        // Fallback de sécurité si le binaire externe n'est pas déployé.
+        return CryptoEngine.EncryptFileInPlace(destinationFile);
+    }
+
+    private static long RunCryptoProcess(string fileName, string arguments)
+    {
+        using Process process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        if (!process.Start())
+        {
+            throw new CryptoSoftException("Impossible de démarrer CryptoSoft.", -100);
+        }
+
+        string stdOut = process.StandardOutput.ReadToEnd().Trim();
+        string stdErr = process.StandardError.ReadToEnd().Trim();
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            long errorCode = process.ExitCode > 0 ? -process.ExitCode : -1;
+            throw new CryptoSoftException(string.IsNullOrWhiteSpace(stdErr)
+                ? "CryptoSoft a retourné une erreur."
+                : stdErr, errorCode);
+        }
+
+        if (long.TryParse(stdOut, NumberStyles.Integer, CultureInfo.InvariantCulture, out long elapsedMs))
+        {
+            return elapsedMs;
+        }
+
+        throw new CryptoSoftException("CryptoSoft n'a pas renvoyé de temps de chiffrement valide.", -101);
+    }
+
+    private sealed class CryptoSoftException : Exception
+    {
+        public CryptoSoftException(string message, long errorCode) : base(message)
+        {
+            ErrorCode = errorCode < 0 ? errorCode : -1;
+        }
+
+        public long ErrorCode { get; }
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
+using System.ComponentModel;
 using System.Windows.Input;
 using Application = System.Windows.Application;
 using EasyLog;
@@ -20,9 +21,11 @@ public class MainViewModel : ViewModelBase
     private readonly WorkList _workList;
     private readonly Language _lang;
     private readonly BackupService _backupService = new BackupService();
+    private readonly GeneralSettingsService _generalSettingsService = new GeneralSettingsService();
 
     public ObservableCollection<WorkItemViewModel> Works { get; } = [];
     public ObservableCollection<WorkItemViewModel> PagedWorks { get; } = [];
+    public ObservableCollection<ExtensionOptionViewModel> EncryptionExtensionOptions { get; } = [];
 
     public IReadOnlyList<int> PageSizeChoices { get; } = [5, 10, 20, 50];
 
@@ -97,6 +100,19 @@ public class MainViewModel : ViewModelBase
 
     public string DisplayWorksJsonPath => Path.Combine(AppContext.BaseDirectory, "works.json");
     public string DisplayEasyLogFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EasySave");
+
+    private string _customEncryptionExtensionInput = "";
+    public string CustomEncryptionExtensionInput
+    {
+        get => _customEncryptionExtensionInput;
+        set => SetField(ref _customEncryptionExtensionInput, value);
+    }
+
+    public string SelectedEncryptionExtensionsDisplay => string.Join("; ",
+        EncryptionExtensionOptions
+            .Where(x => x.IsSelected)
+            .Select(x => x.Extension)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
 
     private bool _isRunning;
     public bool IsRunning
@@ -179,6 +195,7 @@ public class MainViewModel : ViewModelBase
     public ICommand StopBackupCommand { get; }
     public ICommand PrevPageCommand { get; }
     public ICommand NextPageCommand { get; }
+    public ICommand AddCustomEncryptionExtensionCommand { get; }
 
     public Action<CreateWorkViewModel>? RequestShowCreateDialog { get; set; }
 
@@ -189,6 +206,7 @@ public class MainViewModel : ViewModelBase
 
         _lang = Language.GetInstance();
         _isFrench = _lang.GetCurrentLanguage() == Lang.FR;
+        InitializeEncryptionExtensions();
 
         foreach (Work w in _workList.GetWork())
         {
@@ -207,6 +225,7 @@ public class MainViewModel : ViewModelBase
         StopBackupCommand = new RelayCommand(_ => StopBackup(), _ => IsRunning);
         PrevPageCommand = new RelayCommand(_ => CurrentPage -= 1, _ => CurrentPage > 1);
         NextPageCommand = new RelayCommand(_ => CurrentPage += 1, _ => CurrentPage < TotalPages);
+        AddCustomEncryptionExtensionCommand = new RelayCommand(_ => AddCustomEncryptionExtension(), _ => true);
     }
 
     private void OnWorksCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -324,6 +343,14 @@ public class MainViewModel : ViewModelBase
     public string LblSettingsSectionData => _lang.GetString("wpf_settings_section_data");
     public string LblSettingsDataFolder => _lang.GetString("wpf_settings_data_folder");
     public string LblSettingsWorksFile => _lang.GetString("wpf_settings_works_file");
+    public string LblSettingsSectionEncryption => _lang.GetString("wpf_settings_section_encryption");
+    public string LblSettingsEncryptionExtensions => _lang.GetString("wpf_settings_encryption_extensions");
+    public string LblSettingsEncryptionSelected => _lang.GetString("wpf_settings_encryption_selected");
+    public string LblSettingsEncryptionAdd => _lang.GetString("wpf_settings_encryption_add");
+    public string LblSettingsEncryptionAddButton => _lang.GetString("wpf_settings_encryption_add_button");
+    public string LblSettingsEncryptionHint => _lang.GetString("wpf_settings_encryption_hint");
+    public string LblSettingsCryptoSoftFolder => _lang.GetString("wpf_settings_cryptosoft_folder");
+    public string DisplayCryptoSoftFolder => Path.Combine(AppContext.BaseDirectory, "CryptoSoft");
     public string LblSettingsSectionAbout => _lang.GetString("wpf_settings_section_about");
     public string LblSettingsAboutBody => _lang.GetString("wpf_settings_about_body");
     public string LblPagePrev => _lang.GetString("wpf_page_prev");
@@ -374,6 +401,13 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblSettingsSectionData));
         OnPropertyChanged(nameof(LblSettingsDataFolder));
         OnPropertyChanged(nameof(LblSettingsWorksFile));
+        OnPropertyChanged(nameof(LblSettingsSectionEncryption));
+        OnPropertyChanged(nameof(LblSettingsEncryptionExtensions));
+        OnPropertyChanged(nameof(LblSettingsEncryptionSelected));
+        OnPropertyChanged(nameof(LblSettingsEncryptionAdd));
+        OnPropertyChanged(nameof(LblSettingsEncryptionAddButton));
+        OnPropertyChanged(nameof(LblSettingsEncryptionHint));
+        OnPropertyChanged(nameof(LblSettingsCryptoSoftFolder));
         OnPropertyChanged(nameof(LblSettingsSectionAbout));
         OnPropertyChanged(nameof(LblSettingsAboutBody));
         OnPropertyChanged(nameof(LblPagePrev));
@@ -504,5 +538,95 @@ public class MainViewModel : ViewModelBase
     {
         StatusBannerKind = kind;
         StatusBanner = text;
+    }
+
+    private void InitializeEncryptionExtensions()
+    {
+        string[] defaults = [".txt", ".docx", ".pdf", ".xlsx", ".pptx", ".zip", ".json", ".xml"];
+        HashSet<string> selected = _generalSettingsService.Load().EncryptedExtensions
+            .Select(NormalizeExtension)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        List<string> allExtensions = defaults
+            .Concat(selected)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        EncryptionExtensionOptions.Clear();
+        foreach (string extension in allExtensions)
+        {
+            var option = new ExtensionOptionViewModel(extension, selected.Contains(extension));
+            option.PropertyChanged += OnEncryptionOptionPropertyChanged;
+            EncryptionExtensionOptions.Add(option);
+        }
+
+        SaveEncryptionExtensionsFromOptions();
+    }
+
+    private void AddCustomEncryptionExtension()
+    {
+        string normalized = NormalizeExtension(CustomEncryptionExtensionInput);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return;
+        }
+
+        ExtensionOptionViewModel? existing = EncryptionExtensionOptions
+            .FirstOrDefault(x => string.Equals(x.Extension, normalized, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is null)
+        {
+            existing = new ExtensionOptionViewModel(normalized, true);
+            existing.PropertyChanged += OnEncryptionOptionPropertyChanged;
+            EncryptionExtensionOptions.Add(existing);
+        }
+        else
+        {
+            existing.IsSelected = true;
+        }
+
+        CustomEncryptionExtensionInput = "";
+        SaveEncryptionExtensionsFromOptions();
+        OnPropertyChanged(nameof(SelectedEncryptionExtensionsDisplay));
+    }
+
+    private void OnEncryptionOptionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ExtensionOptionViewModel.IsSelected))
+        {
+            return;
+        }
+
+        SaveEncryptionExtensionsFromOptions();
+        OnPropertyChanged(nameof(SelectedEncryptionExtensionsDisplay));
+    }
+
+    private void SaveEncryptionExtensionsFromOptions()
+    {
+        List<string> selected = EncryptionExtensionOptions
+            .Where(x => x.IsSelected)
+            .Select(x => NormalizeExtension(x.Extension))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        _generalSettingsService.Save(new GeneralSettings
+        {
+            EncryptedExtensions = selected
+        });
+    }
+
+    private static string NormalizeExtension(string value)
+    {
+        string v = value.Trim();
+        if (string.IsNullOrWhiteSpace(v))
+        {
+            return string.Empty;
+        }
+
+        return v.StartsWith('.') ? v : "." + v;
     }
 }

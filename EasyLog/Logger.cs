@@ -10,13 +10,14 @@ public class LogEntry
     public string DestinationFile { get; set; } = "";
     public long FileSize { get; set; }
     public long TransferTimeMs { get; set; }
+    public long EncryptionTimeMs { get; set; }
     public bool Success { get; set; } = true;
     public string ErrorMessage { get; set; } = "";
 }
 
 public interface ILogger
 {
-    void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, bool success = true, string errorMessage = "");
+    void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, long encryptionTimeMs = 0, bool success = true, string errorMessage = "");
 }
 
 public class Logger : ILogger
@@ -35,7 +36,7 @@ public class Logger : ILogger
         logDirectory = directory;
     }
 
-    public void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, bool success = true, string errorMessage = "")
+    public void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, long encryptionTimeMs = 0, bool success = true, string errorMessage = "")
     {
         LogEntry entry = new LogEntry
         {
@@ -45,6 +46,7 @@ public class Logger : ILogger
             DestinationFile = destinationFile,
             FileSize = fileSize,
             TransferTimeMs = transferTimeMs,
+            EncryptionTimeMs = encryptionTimeMs,
             Success = success,
             ErrorMessage = errorMessage
         };

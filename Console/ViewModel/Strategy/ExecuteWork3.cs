@@ -187,7 +187,7 @@ public class ExecuteWork3 : IStrategy
 
             stateFile.WriteProcess(state);
             OnProgress?.Invoke(state);
-            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, fileSuccess, errorMsg);
+            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, 0, fileSuccess, errorMsg);
         }
 
         return success;
@@ -272,7 +272,7 @@ public class ExecuteWork3 : IStrategy
 
             stateFile.WriteProcess(state);
             OnProgress?.Invoke(state);
-            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, fileSuccess, errorMsg);
+            logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, 0, fileSuccess, errorMsg);
         }
 
         return success;

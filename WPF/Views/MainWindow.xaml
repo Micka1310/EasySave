@@ -516,6 +516,84 @@
                             </StackPanel>
                         </Border>
 
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,16" Padding="24">
+                            <StackPanel>
+                                <TextBlock Text="{Binding LblSettingsSectionEncryption}"
+                                           FontSize="12" FontWeight="Bold"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Margin="0,0,0,4" />
+                                <TextBlock Text="{Binding LblSettingsEncryptionExtensions}"
+                                           FontSize="15" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Margin="0,8,0,0" />
+                                <ItemsControl Margin="0,10,0,0"
+                                              ItemsSource="{Binding EncryptionExtensionOptions}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding Extension}"
+                                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                      Margin="0,0,16,8"
+                                                      Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding LblSettingsEncryptionAdd}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,8,0,4" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             MinWidth="260"
+                                             Margin="0,0,8,0"
+                                             Padding="10,8"
+                                             Text="{Binding CustomEncryptionExtensionInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button Grid.Column="1"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Command="{Binding AddCustomEncryptionExtensionCommand}"
+                                            Content="{Binding LblSettingsEncryptionAddButton}" />
+                                </Grid>
+                                <TextBlock Text="{Binding LblSettingsEncryptionSelected}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,10,0,4" />
+                                <Border Background="{StaticResource SurfaceElevatedBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                        CornerRadius="8" Padding="12,10" Margin="0,0,0,8">
+                                    <TextBlock Text="{Binding SelectedEncryptionExtensionsDisplay}"
+                                               FontFamily="Consolas"
+                                               FontSize="12"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               TextWrapping="Wrap" />
+                                </Border>
+                                <TextBlock Text="{Binding LblSettingsEncryptionHint}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,12,0,8" FontSize="13"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                <TextBlock Text="{Binding LblSettingsCryptoSoftFolder}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,0,0,4" />
+                                <Border Background="{StaticResource SurfaceElevatedBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                        CornerRadius="8" Padding="12,10">
+                                    <TextBlock Text="{Binding DisplayCryptoSoftFolder}"
+                                               FontFamily="Consolas"
+                                               FontSize="12"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               TextWrapping="Wrap" />
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
                         <Border Style="{StaticResource Card}" Padding="24">
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionAbout}"
