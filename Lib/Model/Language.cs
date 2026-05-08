@@ -94,7 +94,20 @@ public class Language
                 { "wpf_stop", "Arrêter" },
                 { "wpf_status_paused", "En pause" },
                 { "wpf_status_cancelled", "Annulé" },
-                { "wpf_backup_stopped", "Sauvegarde interrompue." }
+                { "wpf_backup_stopped", "Sauvegarde interrompue." },
+
+                { "wpf_settings_title", "Paramètres" },
+                { "wpf_settings_subtitle", "Affichage, emplacement des données et informations." },
+                { "wpf_settings_section_display", "Affichage de la liste" },
+                { "wpf_settings_page_size", "Travaux par page" },
+                { "wpf_settings_page_size_hint", "Aide à parcourir un grand nombre de travaux sans ralentir l’interface." },
+                { "wpf_settings_section_data", "Données et journaux" },
+                { "wpf_settings_data_folder", "Dossier des journaux et du fichier d’état" },
+                { "wpf_settings_works_file", "Liste des travaux (works.json)" },
+                { "wpf_settings_section_about", "À propos" },
+                { "wpf_settings_about_body", "EasySave v2 — interface graphique. Les travaux sont enregistrés dans works.json à côté de l’exécutable (répertoire de travail de l’application)." },
+                { "wpf_page_prev", "Page précédente" },
+                { "wpf_page_next", "Page suivante" }
             }
         },
         {
@@ -178,7 +191,20 @@ public class Language
                 { "wpf_stop", "Stop" },
                 { "wpf_status_paused", "Paused" },
                 { "wpf_status_cancelled", "Cancelled" },
-                { "wpf_backup_stopped", "Backup stopped." }
+                { "wpf_backup_stopped", "Backup stopped." },
+
+                { "wpf_settings_title", "Settings" },
+                { "wpf_settings_subtitle", "Display, data location and information." },
+                { "wpf_settings_section_display", "List display" },
+                { "wpf_settings_page_size", "Jobs per page" },
+                { "wpf_settings_page_size_hint", "Helps browse many jobs without slowing down the UI." },
+                { "wpf_settings_section_data", "Data and logs" },
+                { "wpf_settings_data_folder", "Logs and state file folder" },
+                { "wpf_settings_works_file", "Job list (works.json)" },
+                { "wpf_settings_section_about", "About" },
+                { "wpf_settings_about_body", "EasySave v2 — graphical UI. Jobs are stored in works.json next to the app (current working directory)." },
+                { "wpf_page_prev", "Previous page" },
+                { "wpf_page_next", "Next page" }
             }
         }
     };

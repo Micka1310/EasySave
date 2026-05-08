@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.IO;
 using System.Windows.Input;
 using Application = System.Windows.Application;
 using EasyLog;
@@ -11,7 +13,7 @@ namespace EasySave.WPF.ViewModels;
 
 /// <summary>
 /// VM principal : gère la liste des travaux, leur exécution, la suppression,
-/// la bascule de langue et expose les libellés traduits pour l'UI.
+/// la bascule de langue, la navigation Travaux / Paramètres et la pagination.
 /// </summary>
 public class MainViewModel : ViewModelBase
 {
@@ -20,6 +22,81 @@ public class MainViewModel : ViewModelBase
     private readonly BackupService _backupService = new BackupService();
 
     public ObservableCollection<WorkItemViewModel> Works { get; } = [];
+    public ObservableCollection<WorkItemViewModel> PagedWorks { get; } = [];
+
+    public IReadOnlyList<int> PageSizeChoices { get; } = [5, 10, 20, 50];
+
+    private bool _showWorksPanel = true;
+    public bool ShowWorksPanel
+    {
+        get => _showWorksPanel;
+        set
+        {
+            if (!SetField(ref _showWorksPanel, value)) return;
+            OnPropertyChanged(nameof(ShowSettingsPanel));
+            OnPropertyChanged(nameof(LblPrimaryHeader));
+            OnPropertyChanged(nameof(LblPrimarySubtitle));
+        }
+    }
+
+    public bool ShowSettingsPanel => !_showWorksPanel;
+
+    private int _pageSize = 10;
+    public int PageSize
+    {
+        get => _pageSize;
+        set
+        {
+            int v = PageSizeChoices.Contains(value) ? value : 10;
+            if (_pageSize == v) return;
+            _pageSize = v;
+            OnPropertyChanged(nameof(PageSize));
+            _currentPage = 1;
+            RebuildPagedWorks();
+        }
+    }
+
+    private int _currentPage = 1;
+    public int CurrentPage
+    {
+        get => _currentPage;
+        set
+        {
+            int max = TotalPages;
+            int v = Math.Clamp(value, 1, Math.Max(1, max));
+            if (_currentPage == v) return;
+            _currentPage = v;
+            OnPropertyChanged(nameof(CurrentPage));
+            RebuildPagedWorks();
+        }
+    }
+
+    public int TotalPages => Works.Count == 0
+        ? 1
+        : Math.Max(1, (int)Math.Ceiling(Works.Count / (double)Math.Max(1, _pageSize)));
+
+    public bool ShowPaginationBar => Works.Count > 0 && TotalPages > 1;
+
+    public string LblPaginationDetail
+    {
+        get
+        {
+            if (Works.Count == 0)
+                return "";
+            int start = (_currentPage - 1) * _pageSize + 1;
+            int end = Math.Min(_currentPage * _pageSize, Works.Count);
+            return IsFrench
+                ? $"{start}–{end} sur {Works.Count}"
+                : $"{start}–{end} of {Works.Count}";
+        }
+    }
+
+    public string LblPaginationPages => IsFrench
+        ? $"Page {_currentPage} / {TotalPages}"
+        : $"Page {_currentPage} / {TotalPages}";
+
+    public string DisplayWorksJsonPath => Path.Combine(AppContext.BaseDirectory, "works.json");
+    public string DisplayEasyLogFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EasySave");
 
     private bool _isRunning;
     public bool IsRunning
@@ -38,15 +115,12 @@ public class MainViewModel : ViewModelBase
 
     public bool CanInteract => !IsRunning;
 
-    /// <summary>Barre d’actions principale (lancer / nouveau) visible seulement hors exécution.</summary>
     public bool ShowMainRunActions => !IsRunning;
 
-    /// <summary>Pause / reprise / arrêt visibles pendant une série de sauvegardes v2.</summary>
     public bool ShowBackupTransportActions => IsRunning;
 
     private volatile bool _runPaused;
 
-    /// <summary>État pause : lu par le filet d’exécution via callback vers <see cref="BackupService"/>.</summary>
     public bool IsRunPaused
     {
         get => _runPaused;
@@ -75,7 +149,7 @@ public class MainViewModel : ViewModelBase
 
     public bool HasStatusBanner => !string.IsNullOrEmpty(StatusBanner);
 
-    private string _statusBannerKind = "info"; // "info" | "success" | "error" | "warning"
+    private string _statusBannerKind = "info";
     public string StatusBannerKind
     {
         get => _statusBannerKind;
@@ -103,6 +177,8 @@ public class MainViewModel : ViewModelBase
     public ICommand PauseBackupCommand { get; }
     public ICommand ResumeBackupCommand { get; }
     public ICommand StopBackupCommand { get; }
+    public ICommand PrevPageCommand { get; }
+    public ICommand NextPageCommand { get; }
 
     public Action<CreateWorkViewModel>? RequestShowCreateDialog { get; set; }
 
@@ -119,6 +195,9 @@ public class MainViewModel : ViewModelBase
             Works.Add(new WorkItemViewModel(w));
         }
 
+        Works.CollectionChanged += OnWorksCollectionChanged;
+        RebuildPagedWorks();
+
         CreateWorkCommand = new RelayCommand(_ => OpenCreateDialog(), _ => CanInteract && !_workList.IsFull());
         RunSelectedCommand = new RelayCommand(async _ => await RunWorksAsync(GetSelected()), _ => CanInteract && GetSelected().Any());
         RunAllCommand = new RelayCommand(async _ => await RunWorksAsync(Works.ToList()), _ => CanInteract && Works.Count > 0);
@@ -126,6 +205,45 @@ public class MainViewModel : ViewModelBase
         PauseBackupCommand = new RelayCommand(_ => PauseBackup(), _ => IsRunning && !IsRunPaused);
         ResumeBackupCommand = new RelayCommand(_ => ResumeBackup(), _ => IsRunning && IsRunPaused);
         StopBackupCommand = new RelayCommand(_ => StopBackup(), _ => IsRunning);
+        PrevPageCommand = new RelayCommand(_ => CurrentPage -= 1, _ => CurrentPage > 1);
+        NextPageCommand = new RelayCommand(_ => CurrentPage += 1, _ => CurrentPage < TotalPages);
+    }
+
+    private void OnWorksCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(LblCount));
+        RebuildPagedWorks();
+    }
+
+    private void RebuildPagedWorks()
+    {
+        PagedWorks.Clear();
+        if (Works.Count == 0)
+        {
+        OnPropertyChanged(nameof(LblPaginationDetail));
+        OnPropertyChanged(nameof(LblPaginationPages));
+        OnPropertyChanged(nameof(ShowPaginationBar));
+        CommandManager.InvalidateRequerySuggested();
+        return;
+        }
+
+        int pageSize = Math.Max(1, _pageSize);
+        int totalPages = Math.Max(1, (int)Math.Ceiling(Works.Count / (double)pageSize));
+        if (_currentPage > totalPages)
+        {
+            _currentPage = totalPages;
+            OnPropertyChanged(nameof(CurrentPage));
+        }
+
+        int skip = (_currentPage - 1) * pageSize;
+        foreach (WorkItemViewModel w in Works.Skip(skip).Take(pageSize))
+            PagedWorks.Add(w);
+
+        OnPropertyChanged(nameof(TotalPages));
+        OnPropertyChanged(nameof(LblPaginationDetail));
+        OnPropertyChanged(nameof(LblPaginationPages));
+        OnPropertyChanged(nameof(ShowPaginationBar));
+        CommandManager.InvalidateRequerySuggested();
     }
 
     private void RefreshTransportBindings()
@@ -156,7 +274,9 @@ public class MainViewModel : ViewModelBase
         IsRunPaused = false;
     }
 
-    // --- Libellés traduits utilisés en binding direct ---
+    public string LblPrimaryHeader => ShowWorksPanel ? LblHeader : LblSettingsTitle;
+    public string LblPrimarySubtitle => ShowWorksPanel ? LblCount : LblSettingsSubtitle;
+
     public string LblAppTitle => "EasySave";
     public string LblAppSubtitle => IsFrench ? "Outil de sauvegarde — v2" : "Backup tool — v2";
     public string LblSectionMenu => _lang.GetString("wpf_section_menu");
@@ -196,6 +316,19 @@ public class MainViewModel : ViewModelBase
     public string LblSave => IsFrench ? "Enregistrer" : "Save";
     public string LblCancel => IsFrench ? "Annuler" : "Cancel";
 
+    public string LblSettingsTitle => _lang.GetString("wpf_settings_title");
+    public string LblSettingsSubtitle => _lang.GetString("wpf_settings_subtitle");
+    public string LblSettingsSectionDisplay => _lang.GetString("wpf_settings_section_display");
+    public string LblSettingsPageSize => _lang.GetString("wpf_settings_page_size");
+    public string LblSettingsPageSizeHint => _lang.GetString("wpf_settings_page_size_hint");
+    public string LblSettingsSectionData => _lang.GetString("wpf_settings_section_data");
+    public string LblSettingsDataFolder => _lang.GetString("wpf_settings_data_folder");
+    public string LblSettingsWorksFile => _lang.GetString("wpf_settings_works_file");
+    public string LblSettingsSectionAbout => _lang.GetString("wpf_settings_section_about");
+    public string LblSettingsAboutBody => _lang.GetString("wpf_settings_about_body");
+    public string LblPagePrev => _lang.GetString("wpf_page_prev");
+    public string LblPageNext => _lang.GetString("wpf_page_next");
+
     private void NotifyAllLabels()
     {
         OnPropertyChanged(nameof(LblAppSubtitle));
@@ -205,6 +338,8 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblNavSettings));
         OnPropertyChanged(nameof(LblHeader));
         OnPropertyChanged(nameof(LblCount));
+        OnPropertyChanged(nameof(LblPrimaryHeader));
+        OnPropertyChanged(nameof(LblPrimarySubtitle));
         OnPropertyChanged(nameof(LblNew));
         OnPropertyChanged(nameof(LblRunSelected));
         OnPropertyChanged(nameof(LblRunAll));
@@ -231,6 +366,20 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblBrowse));
         OnPropertyChanged(nameof(LblSave));
         OnPropertyChanged(nameof(LblCancel));
+        OnPropertyChanged(nameof(LblSettingsTitle));
+        OnPropertyChanged(nameof(LblSettingsSubtitle));
+        OnPropertyChanged(nameof(LblSettingsSectionDisplay));
+        OnPropertyChanged(nameof(LblSettingsPageSize));
+        OnPropertyChanged(nameof(LblSettingsPageSizeHint));
+        OnPropertyChanged(nameof(LblSettingsSectionData));
+        OnPropertyChanged(nameof(LblSettingsDataFolder));
+        OnPropertyChanged(nameof(LblSettingsWorksFile));
+        OnPropertyChanged(nameof(LblSettingsSectionAbout));
+        OnPropertyChanged(nameof(LblSettingsAboutBody));
+        OnPropertyChanged(nameof(LblPagePrev));
+        OnPropertyChanged(nameof(LblPageNext));
+        OnPropertyChanged(nameof(LblPaginationDetail));
+        OnPropertyChanged(nameof(LblPaginationPages));
 
         foreach (WorkItemViewModel w in Works)
             w.RefreshLocalization();
