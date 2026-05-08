@@ -77,7 +77,17 @@ public class Language
                 { "error_destination_not_found", "Le répertoire de destination n'existe pas." },
                 { "error_same_source_destination", "La source et la destination doivent être différentes." },
                 { "error_invalid_backup_type", "Type invalide : entrez 1 (complet) ou 2 (différentielle)." },
-                { "error_missing_create_parameters", "Saisie incomplète : nom, source, destination et type sont requis." }
+                { "error_missing_create_parameters", "Saisie incomplète : nom, source, destination et type sont requis." },
+
+                { "wpf_status_idle", "En attente" },
+                { "wpf_status_inactive", "Inactif" },
+                { "wpf_status_active", "En cours" },
+                { "wpf_section_menu", "MENU" },
+                { "wpf_section_language", "Langue" },
+                { "wpf_backup_full_title", "Sauvegarde complète" },
+                { "wpf_backup_full_desc", "Copie tous les fichiers à chaque exécution." },
+                { "wpf_backup_diff_title", "Sauvegarde différentielle" },
+                { "wpf_backup_diff_desc", "Copie uniquement les fichiers modifiés depuis la dernière complète." }
             }
         },
         {
@@ -144,7 +154,17 @@ public class Language
                 { "error_destination_not_found", "Destination directory does not exist." },
                 { "error_same_source_destination", "Source and destination must be different." },
                 { "error_invalid_backup_type", "Invalid type: enter 1 (full) or 2 (differential)." },
-                { "error_missing_create_parameters", "Incomplete input: name, source, destination and type are required." }
+                { "error_missing_create_parameters", "Incomplete input: name, source, destination and type are required." },
+
+                { "wpf_status_idle", "Idle" },
+                { "wpf_status_inactive", "Inactive" },
+                { "wpf_status_active", "Running" },
+                { "wpf_section_menu", "MENU" },
+                { "wpf_section_language", "Language" },
+                { "wpf_backup_full_title", "Full backup" },
+                { "wpf_backup_full_desc", "Copies all files on every run." },
+                { "wpf_backup_diff_title", "Differential backup" },
+                { "wpf_backup_diff_desc", "Copies only files changed since the last full backup." }
             }
         }
     };

@@ -1,4 +1,5 @@
 using EasyLog;
+using LanguageFile;
 using WorkFile;
 
 namespace EasySave.WPF.ViewModels;
@@ -23,12 +24,20 @@ public class WorkItemViewModel : ViewModelBase
     public string TypeRaw => Work.GetWorkType();
     public bool IsFullBackup => TypeRaw == "1";
 
-    private string _status = "Idle";
-    public string Status
+    private string _statusKey = "Inactive";
+    /// <summary>Valeur technique (Active, Inactive, Done, Error, Idle) pour les couleurs.</summary>
+    public string StatusKey
     {
-        get => _status;
-        set => SetField(ref _status, value);
+        get => _statusKey;
+        set
+        {
+            if (SetField(ref _statusKey, value))
+                OnPropertyChanged(nameof(StatusDisplay));
+        }
     }
+
+    /// <summary>Libellé affiché selon la langue courante.</summary>
+    public string StatusDisplay => LocalizeStatus(_statusKey);
 
     private int _progression;
     public int Progression
@@ -80,9 +89,16 @@ public class WorkItemViewModel : ViewModelBase
         Work = work;
     }
 
+    public void RefreshLocalization()
+    {
+        OnPropertyChanged(nameof(StatusDisplay));
+        OnPropertyChanged(nameof(TotalSizeFormatted));
+        OnPropertyChanged(nameof(RemainingSizeFormatted));
+    }
+
     public void UpdateFromState(WorkState state)
     {
-        Status = state.Status;
+        StatusKey = state.Status;
         Progression = state.Progression;
         TotalFiles = state.TotalFiles;
         ProcessedFiles = state.TotalFiles - state.RemainingFiles;
@@ -93,7 +109,7 @@ public class WorkItemViewModel : ViewModelBase
 
     public void Reset()
     {
-        Status = "Idle";
+        StatusKey = "Inactive";
         Progression = 0;
         TotalFiles = 0;
         ProcessedFiles = 0;
@@ -102,10 +118,30 @@ public class WorkItemViewModel : ViewModelBase
         CurrentFile = "";
     }
 
+    private static string LocalizeStatus(string key)
+    {
+        Language lang = Language.GetInstance();
+        return key switch
+        {
+            "Done" => lang.GetString("progress_done"),
+            "Error" => lang.GetString("progress_error"),
+            "Active" => lang.GetString("wpf_status_active"),
+            "Inactive" => lang.GetString("wpf_status_inactive"),
+            "Idle" => lang.GetString("wpf_status_idle"),
+            _ => key
+        };
+    }
+
     private static string FormatBytes(long bytes)
     {
-        if (bytes <= 0) return "0 o";
-        string[] units = ["o", "Ko", "Mo", "Go", "To"];
+        if (bytes <= 0)
+            return Language.GetInstance().GetCurrentLanguage() == Lang.FR ? "0 o" : "0 B";
+
+        bool french = Language.GetInstance().GetCurrentLanguage() == Lang.FR;
+        string[] units = french
+            ? ["o", "Ko", "Mo", "Go", "To"]
+            : ["B", "KB", "MB", "GB", "TB"];
+
         double v = bytes;
         int u = 0;
         while (v >= 1024 && u < units.Length - 1)
@@ -113,6 +149,7 @@ public class WorkItemViewModel : ViewModelBase
             v /= 1024;
             u++;
         }
+
         return $"{v:0.##} {units[u]}";
     }
 }

@@ -20,6 +20,16 @@ public class BoolToVisibilityConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>Inverse bool pour lier la 2ᵉ RadioButton (ex. langue EN, type différentiel).</summary>
+public class InverseBooleanConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b ? !b : System.Windows.DependencyProperty.UnsetValue;
+
+    public object ConvertBack(object value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b ? !b : System.Windows.DependencyProperty.UnsetValue;
+}
+
 public class CountToVisibilityConverter : IValueConverter
 {
     public bool ShowWhenZero { get; set; }
@@ -45,6 +55,7 @@ public class StatusToBrushConverter : IValueConverter
             "Active" => Application.Current.Resources["AccentBrush"],
             "Done" => Application.Current.Resources["SuccessBrush"],
             "Inactive" => Application.Current.Resources["TextMutedBrush"],
+            "Idle" => Application.Current.Resources["TextMutedBrush"],
             "Error" => Application.Current.Resources["ErrorBrush"],
             _ => Application.Current.Resources["TextMutedBrush"]
         };

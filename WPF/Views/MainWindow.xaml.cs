@@ -20,7 +20,8 @@ public partial class MainWindow : Window
         CreateWorkDialog dlg = new CreateWorkDialog
         {
             DataContext = vm,
-            Owner = this
+            Owner = this,
+            Tag = _vm,
         };
 
         vm.CloseRequested += (_, _) => dlg.Close();

@@ -71,7 +71,6 @@ public class MainViewModel : ViewModelBase
     public ICommand RunSelectedCommand { get; }
     public ICommand RunAllCommand { get; }
     public ICommand DeleteWorkCommand { get; }
-    public ICommand ToggleLanguageCommand { get; }
 
     public Action<CreateWorkViewModel>? RequestShowCreateDialog { get; set; }
 
@@ -90,12 +89,13 @@ public class MainViewModel : ViewModelBase
         RunSelectedCommand = new RelayCommand(async _ => await RunWorksAsync(GetSelected()), _ => CanInteract && GetSelected().Any());
         RunAllCommand = new RelayCommand(async _ => await RunWorksAsync(Works.ToList()), _ => CanInteract && Works.Count > 0);
         DeleteWorkCommand = new RelayCommand(p => DeleteWork(p as WorkItemViewModel), _ => CanInteract);
-        ToggleLanguageCommand = new RelayCommand(_ => IsFrench = !IsFrench);
     }
 
     // --- Libellés traduits utilisés en binding direct ---
     public string LblAppTitle => "EasySave";
     public string LblAppSubtitle => IsFrench ? "Outil de sauvegarde — v2" : "Backup tool — v2";
+    public string LblSectionMenu => _lang.GetString("wpf_section_menu");
+    public string LblSectionLanguage => _lang.GetString("wpf_section_language");
     public string LblNavWorks => IsFrench ? "Travaux" : "Jobs";
     public string LblNavSettings => IsFrench ? "Paramètres" : "Settings";
     public string LblHeader => IsFrench ? "Mes travaux de sauvegarde" : "My backup jobs";
@@ -111,8 +111,12 @@ public class MainViewModel : ViewModelBase
         : "Create your first backup job to get started.";
     public string LblCreateFirst => IsFrench ? "Créer un travail" : "Create a job";
     public string LblFull => _lang.GetString("backup_type_short_full");
-    public string LblDiff => IsFrench ? "Différentielle" : "Differential";
-    public string LblSource => IsFrench ? "Source" : "Source";
+    public string LblDiff => _lang.GetString("backup_type_short_diff");
+    public string LblBackupFullTitle => _lang.GetString("wpf_backup_full_title");
+    public string LblBackupFullDesc => _lang.GetString("wpf_backup_full_desc");
+    public string LblBackupDiffTitle => _lang.GetString("wpf_backup_diff_title");
+    public string LblBackupDiffDesc => _lang.GetString("wpf_backup_diff_desc");
+    public string LblSource => "Source";
     public string LblDestination => IsFrench ? "Destination" : "Destination";
     public string LblDelete => IsFrench ? "Supprimer" : "Delete";
     public string LblDialogTitle => IsFrench ? "Nouveau travail" : "New job";
@@ -126,8 +130,9 @@ public class MainViewModel : ViewModelBase
 
     private void NotifyAllLabels()
     {
-        OnPropertyChanged(string.Empty);
         OnPropertyChanged(nameof(LblAppSubtitle));
+        OnPropertyChanged(nameof(LblSectionMenu));
+        OnPropertyChanged(nameof(LblSectionLanguage));
         OnPropertyChanged(nameof(LblNavWorks));
         OnPropertyChanged(nameof(LblNavSettings));
         OnPropertyChanged(nameof(LblHeader));
@@ -140,6 +145,10 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblCreateFirst));
         OnPropertyChanged(nameof(LblFull));
         OnPropertyChanged(nameof(LblDiff));
+        OnPropertyChanged(nameof(LblBackupFullTitle));
+        OnPropertyChanged(nameof(LblBackupFullDesc));
+        OnPropertyChanged(nameof(LblBackupDiffTitle));
+        OnPropertyChanged(nameof(LblBackupDiffDesc));
         OnPropertyChanged(nameof(LblSource));
         OnPropertyChanged(nameof(LblDestination));
         OnPropertyChanged(nameof(LblDelete));
@@ -151,6 +160,9 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblBrowse));
         OnPropertyChanged(nameof(LblSave));
         OnPropertyChanged(nameof(LblCancel));
+
+        foreach (WorkItemViewModel w in Works)
+            w.RefreshLocalization();
     }
 
     private List<WorkItemViewModel> GetSelected() => Works.Where(w => w.IsSelected).ToList();
@@ -198,7 +210,7 @@ public class MainViewModel : ViewModelBase
             foreach (WorkItemViewModel vm in targets)
             {
                 vm.Reset();
-                vm.Status = "Active";
+                vm.StatusKey = "Active";
 
                 Progress<WorkState> reporter = new Progress<WorkState>(state =>
                 {
@@ -207,7 +219,7 @@ public class MainViewModel : ViewModelBase
 
                 List<string> jobErrors = [];
                 bool ok = await Task.Run(() => _backupService.ExecuteWork(vm.Work, reporter, jobErrors));
-                vm.Status = ok ? "Done" : "Error";
+                vm.StatusKey = ok ? "Done" : "Error";
 
                 foreach (string e in jobErrors)
                 {

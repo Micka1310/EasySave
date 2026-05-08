@@ -12,6 +12,7 @@
     <Window.Resources>
         <h:BoolToVisibilityConverter x:Key="BoolToVis" />
         <h:BoolToVisibilityConverter x:Key="BoolToVisInv" Invert="True" />
+        <h:InverseBooleanConverter x:Key="InvBool" />
         <h:CountToVisibilityConverter x:Key="CountToVisHide" ShowWhenZero="False" />
         <h:CountToVisibilityConverter x:Key="CountToVisShow" ShowWhenZero="True" />
         <h:StatusToBrushConverter x:Key="StatusToBrush" />
@@ -58,7 +59,7 @@
 
                 <!-- Menu navigation -->
                 <StackPanel Grid.Row="1" Margin="0,8,0,0">
-                    <TextBlock Text="MENU" FontSize="10" FontWeight="Bold" Margin="32,12,0,8"
+                    <TextBlock Text="{Binding LblSectionMenu}" FontSize="10" FontWeight="Bold" Margin="32,12,0,8"
                                Foreground="{StaticResource TextMutedBrush}" />
 
                     <RadioButton Style="{StaticResource SidebarItem}" GroupName="Nav" IsChecked="True">
@@ -80,7 +81,7 @@
                     <Border Style="{StaticResource Card}" Padding="14" CornerRadius="10"
                             Background="{StaticResource SurfaceElevatedBrush}">
                         <StackPanel>
-                            <TextBlock Text="LANGUE / LANGUAGE" FontSize="10" FontWeight="Bold"
+                            <TextBlock Text="{Binding LblSectionLanguage}" FontSize="10" FontWeight="Bold"
                                        Foreground="{StaticResource TextMutedBrush}"
                                        Margin="0,0,0,8" />
                             <Grid>
@@ -93,10 +94,9 @@
                                              Style="{StaticResource SidebarItem}"
                                              Margin="0" Padding="8" HorizontalContentAlignment="Center" />
                                 <RadioButton Grid.Column="1" Content="EN" GroupName="Lang"
-                                             IsChecked="{Binding IsFrench, Converter={StaticResource BoolToVisInv}, ConverterParameter=invert}"
+                                             IsChecked="{Binding IsFrench, Converter={StaticResource InvBool}, Mode=TwoWay}"
                                              Style="{StaticResource SidebarItem}"
-                                             Margin="0" Padding="8" HorizontalContentAlignment="Center"
-                                             Command="{Binding ToggleLanguageCommand}" />
+                                             Margin="0" Padding="8" HorizontalContentAlignment="Center" />
                             </Grid>
                         </StackPanel>
                     </Border>
@@ -245,25 +245,20 @@
                                                         <Ellipse Width="6" Height="6"
                                                                  Fill="{Binding IsFullBackup, Converter={StaticResource BackupTypeToBrush}}"
                                                                  VerticalAlignment="Center" Margin="0,0,8,0" />
-                                                        <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold">
-                                                            <TextBlock.Style>
-                                                                <Style TargetType="TextBlock">
-                                                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-                                                                    <Setter Property="Text" Value="Differential" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding IsFullBackup}" Value="True">
-                                                                            <Setter Property="Text" Value="Full" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBlock.Style>
-                                                        </TextBlock>
+                                                        <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                                   Text="{Binding DataContext.LblFull, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                   Visibility="{Binding IsFullBackup, Converter={StaticResource BoolToVis}}" />
+                                                        <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                                   Text="{Binding DataContext.LblDiff, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                   Visibility="{Binding IsFullBackup, Converter={StaticResource BoolToVisInv}}" />
                                                     </StackPanel>
                                                 </Border>
                                                 <Border Style="{StaticResource Chip}" Margin="8,0,0,0">
-                                                    <TextBlock Text="{Binding Status}"
+                                                    <TextBlock Text="{Binding StatusDisplay}"
                                                                FontSize="11" FontWeight="SemiBold"
-                                                               Foreground="{Binding Status, Converter={StaticResource StatusToBrush}}" />
+                                                               Foreground="{Binding StatusKey, Converter={StaticResource StatusToBrush}}" />
                                                 </Border>
                                             </StackPanel>
 
