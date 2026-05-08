@@ -3,7 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:EasySave.WPF.ViewModels"
         xmlns:h="clr-namespace:EasySave.WPF.Helpers"
+        xmlns:svgc="http://sharpvectors.codeplex.com/svgc/"
         Title="EasySave v2"
+        Icon="/EasySave.WPF;component/Assets/app.ico"
         Height="780" Width="1280"
         MinHeight="600" MinWidth="1000"
         WindowStartupLocation="CenterScreen"
@@ -41,10 +43,11 @@
                 <StackPanel Grid.Row="0" Margin="24,28,24,32">
                     <StackPanel Orientation="Horizontal">
                         <Border Width="40" Height="40" CornerRadius="10"
-                                Background="{StaticResource PrimaryButtonGradient}">
-                            <TextBlock Text="✦" FontSize="22" FontWeight="Bold"
-                                       Foreground="#1A1B26"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                Background="{StaticResource SurfaceElevatedBrush}"
+                                ClipToBounds="True">
+                            <svgc:SvgViewbox Source="/EasySave.WPF;component/Views/logo.svg"
+                                             Stretch="Uniform"
+                                             Margin="5" />
                         </Border>
                         <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="{Binding LblAppTitle}"
@@ -186,10 +189,11 @@
                         BorderThickness="1" CornerRadius="16" Padding="48,40">
                     <StackPanel HorizontalAlignment="Center">
                         <Border Width="64" Height="64" CornerRadius="32"
-                                Background="{StaticResource SurfaceElevatedBrush}">
-                            <TextBlock Text="✦" FontSize="32"
-                                       Foreground="{StaticResource AccentBrush}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                Background="{StaticResource SurfaceElevatedBrush}"
+                                ClipToBounds="True">
+                            <svgc:SvgViewbox Source="/EasySave.WPF;component/Views/logo.svg"
+                                             Stretch="Uniform"
+                                             Margin="10" />
                         </Border>
                         <TextBlock Text="{Binding LblEmptyTitle}"
                                    FontSize="18" FontWeight="SemiBold" Margin="0,16,0,4"

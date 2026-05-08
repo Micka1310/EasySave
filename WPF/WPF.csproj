@@ -11,9 +11,13 @@
     <RootNamespace>EasySave.WPF</RootNamespace>
     <AssemblyName>EasySave.WPF</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+    <Resource Include="Views\logo.svg" />
+    <PackageReference Include="SharpVectors.Wpf" Version="1.8.4.2" />
     <ProjectReference Include="..\Lib\Lib.csproj" />
     <ProjectReference Include="..\EasyLog\EasyLog.csproj" />
   </ItemGroup>
