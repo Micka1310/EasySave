@@ -120,7 +120,7 @@ public class Language
                 { "wpf_settings_encryption_hint", "Cochez les extensions à chiffrer. Les fichiers de ces types seront chiffrés après copie via CryptoSoft." },
                 { "wpf_settings_cryptosoft_folder", "Dossier du logiciel CryptoSoft" },
                 { "wpf_settings_section_about", "À propos" },
-                { "wpf_settings_about_body", "EasySave v2 — interface graphique. Les travaux sont enregistrés dans works.json à côté de l’exécutable (répertoire de travail de l’application)." },
+                { "wpf_settings_about_body", "EasySave v2 — interface graphique. Les travaux sont enregistrés dans %AppData%\\EasySave\\works.json." },
                 { "wpf_page_prev", "Page précédente" },
                 { "wpf_page_next", "Page suivante" }
             }
@@ -232,7 +232,7 @@ public class Language
                 { "wpf_settings_encryption_hint", "Check the extensions to encrypt. Files matching those types are encrypted after copy through CryptoSoft." },
                 { "wpf_settings_cryptosoft_folder", "CryptoSoft software folder" },
                 { "wpf_settings_section_about", "About" },
-                { "wpf_settings_about_body", "EasySave v2 — graphical UI. Jobs are stored in works.json next to the app (current working directory)." },
+                { "wpf_settings_about_body", "EasySave v2 — graphical UI. Jobs are stored in %AppData%\\EasySave\\works.json." },
                 { "wpf_page_prev", "Previous page" },
                 { "wpf_page_next", "Next page" }
             }

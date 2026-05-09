@@ -3,5 +3,4 @@
   <Project Path="EasyLog/EasyLog.csproj" />
   <Project Path="Lib/Lib.csproj" />
   <Project Path="UnitTest/UnitTest.csproj" />
-  <Project Path="WPF/WPF.csproj" />
 </Solution>

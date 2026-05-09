@@ -7,7 +7,21 @@ public class WorkList
 {
     public const int MaxWorks = 5;
 
-    private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "works.json");
+    /// <summary>Dossier de persistance utilisateur (même logique que EasyLog).</summary>
+    public static string PersistentDataDirectory =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EasySave");
+
+    /// <summary>Tests : remplace <see cref="PersistentDataDirectory"/> pour isoler les fichiers.</summary>
+    public static string? PersistenceDirectoryOverride { get; set; }
+
+    private static string EffectiveDataDirectory =>
+        string.IsNullOrWhiteSpace(PersistenceDirectoryOverride)
+            ? PersistentDataDirectory
+            : PersistenceDirectoryOverride.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+    /// <summary>Chemin complet de <c>works.json</c>.</summary>
+    public static string WorksJsonPath => Path.Combine(EffectiveDataDirectory, "works.json");
+
     private static readonly object FileLock = new();
 
     private List<Work> works;
@@ -46,10 +60,16 @@ public class WorkList
         return true;
     }
 
+    private static void EnsureDataDirectory()
+    {
+        Directory.CreateDirectory(EffectiveDataDirectory);
+    }
+
     private void SaveToFile()
     {
         lock (FileLock)
         {
+            EnsureDataDirectory();
             var data = works.Select(w => new WorkDto
             {
                 Name = w.GetName(),
@@ -59,7 +79,7 @@ public class WorkList
             }).ToList();
 
             string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(FilePath, json);
+            File.WriteAllText(WorksJsonPath, json);
         }
     }
 
@@ -67,14 +87,16 @@ public class WorkList
     {
         lock (FileLock)
         {
-            if (!File.Exists(FilePath))
+            EnsureDataDirectory();
+
+            if (!File.Exists(WorksJsonPath))
             {
                 return [];
             }
 
             try
             {
-                string content = File.ReadAllText(FilePath);
+                string content = File.ReadAllText(WorksJsonPath);
                 var dtos = JsonSerializer.Deserialize<List<WorkDto>>(content) ?? [];
                 return dtos
                     .Select(d => new Work(d.Name, d.Source, d.Destination, d.Type))

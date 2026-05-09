@@ -113,7 +113,7 @@ La **v1** de l'application doit comprendre :
 ### Quelques modifications supplémentaire concernant cette version
 
 - Des dictionnaires sont utilisé pour changer la langue
-- Les travaux sont sauvegarder et conservé même lorsque l'application s'éteint grâce à un fichier JSON "works.json"
+- Les travaux sont sauvegardés dans `%AppData%\\EasySave\\works.json` (persistants après fermeture de l’application)
 - Ajout d'une option "Supprimer un travail" et "Exit / Quitter" pour une meilleure expérience utilisateur
 - Ajout d'une variable "Success" vérifiant pour chaque action si le transfert d'un fichier spécifique à été réussis depuis le fichier log
 \\\\\ À compléter \\\\\
