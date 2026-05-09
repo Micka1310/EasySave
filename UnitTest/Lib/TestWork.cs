@@ -33,7 +33,7 @@ public sealed class TestWorkList
     [TestInitialize]
     public void Setup()
     {
-        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        string worksFile = WorkList.WorksJsonPath;
         if (File.Exists(worksFile)) File.Delete(worksFile);
     }
 
@@ -83,5 +83,38 @@ public sealed class TestWorkList
         Assert.AreEqual("C:\\source", work.GetSourceDirectory());
         Assert.AreEqual("D:\\destination", work.GetDestinationDirectory());
         Assert.AreEqual("Complet", work.GetWorkType());
+    }
+}
+
+/// <summary>
+/// Pendant la suite de tests, <c>works.json</c> est dans un dossier temporaire (pas %AppData%\EasySave).
+/// </summary>
+[TestClass]
+public sealed class WorkListTestAssemblyInit
+{
+    [AssemblyInitialize]
+    public static void AssemblyInit(TestContext _)
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "EasySave_UnitTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        WorkList.PersistenceDirectoryOverride = dir;
+    }
+
+    [AssemblyCleanup]
+    public static void AssemblyCleanup()
+    {
+        string? d = WorkList.PersistenceDirectoryOverride;
+        WorkList.PersistenceDirectoryOverride = null;
+        if (d is not null && Directory.Exists(d))
+        {
+            try
+            {
+                Directory.Delete(d, true);
+            }
+            catch
+            {
+                // best-effort
+            }
+        }
     }
 }

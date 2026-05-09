@@ -7,6 +7,7 @@
 
 using ControllerFile;
 using LanguageFile;
+using WorkListFile;
 using System.Diagnostics;
 
 [TestClass]
@@ -33,7 +34,7 @@ public sealed class TestConsoleStrategy
     public void Setup()
     {
         Language.Reset();
-        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        string worksFile = WorkList.WorksJsonPath;
         if (File.Exists(worksFile)) File.Delete(worksFile);
     }
 
@@ -478,7 +479,7 @@ public sealed class TestLanguage
     [TestMethod]
     public void ChangeLanguage_ViaController_SwitchesToEnglish()
     {
-        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        string worksFile = WorkList.WorksJsonPath;
         if (File.Exists(worksFile)) File.Delete(worksFile);
 
         Controller controller = new();
@@ -495,7 +496,7 @@ public sealed class TestLanguage
     [TestMethod]
     public void ChangeLanguage_ViaController_InvalidChoice_ReturnsError()
     {
-        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        string worksFile = WorkList.WorksJsonPath;
         if (File.Exists(worksFile)) File.Delete(worksFile);
 
         Controller controller = new();

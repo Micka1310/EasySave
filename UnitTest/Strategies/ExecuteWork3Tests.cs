@@ -17,7 +17,7 @@ public class ExecuteWork3Tests
         destinationDir = Path.Combine(Path.GetTempPath(), "EasySave_Dest_" + Guid.NewGuid());
         Directory.CreateDirectory(sourceDir);
         Directory.CreateDirectory(destinationDir);
-        string worksFile = Path.Combine(AppContext.BaseDirectory, "works.json");
+        string worksFile = WorkList.WorksJsonPath;
         try { if (File.Exists(worksFile)) File.Delete(worksFile); } catch { }
     }
 
