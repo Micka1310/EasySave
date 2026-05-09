@@ -21,6 +21,15 @@ public class Language
                 { "option_execute", "Exécuter un travaux" },
                 { "option_delete", "Supprimer un travail" },
                 { "option_language", "Changer la langue" },
+                { "option_log_format", "Changer le format des journaux" },
+
+                { "log_format_title", "Format des fichiers journaux (JSON ou XML)" },
+                { "log_format_json", "JSON (.json)" },
+                { "log_format_xml", "XML (.xml)" },
+                { "log_format_choice", "Choisissez le format des journaux :\n1. JSON\n2. XML" },
+                { "log_format_changed_json", "Format des journaux : JSON." },
+                { "log_format_changed_xml", "Format des journaux : XML." },
+                { "log_format_header_label", "Journaux" },
 
                 { "create_name", "Saisissez un nom de fichier :" },
                 { "create_source", "Saisissez le répertoire source :" },
@@ -125,6 +134,15 @@ public class Language
                 { "option_execute", "Execute a work" },
                 { "option_delete", "Delete a work" },
                 { "option_language", "Change language" },
+                { "option_log_format", "Change log file format" },
+
+                { "log_format_title", "Log file format (JSON or XML)" },
+                { "log_format_json", "JSON (.json)" },
+                { "log_format_xml", "XML (.xml)" },
+                { "log_format_choice", "Choose log format:\n1. JSON\n2. XML" },
+                { "log_format_changed_json", "Log format set to JSON." },
+                { "log_format_changed_xml", "Log format set to XML." },
+                { "log_format_header_label", "Logs" },
 
                 { "create_name", "Enter a file name:" },
                 { "create_source", "Enter the source directory:" },

@@ -11,6 +11,7 @@ using CreateWork2File;
 using ExecuteWork3File;
 using DeleteWork4File;
 using ChangeLanguage5File;
+using ChangeLogFormat6File;
 
 public class Controller
 {
@@ -25,7 +26,8 @@ public class Controller
 			new CreateWork2(),
 			new ExecuteWork3(),
 			new DeleteWork4(),
-			new ChangeLanguage5()
+			new ChangeLanguage5(),
+			new ChangeLogFormat6()
         ];
 
         workList = new WorkList();

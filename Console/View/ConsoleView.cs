@@ -29,6 +29,7 @@ public class ConsoleView
         DisplayBanner();
         Thread.Sleep(1500);
         ChooseLanguage();
+        ChooseLogFormat();
 
         while (true)
         {
@@ -71,7 +72,7 @@ public class ConsoleView
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("    ─────────────────────────────────────────────────────────────────");
         Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine("                        Backup Management Tool v1.0");
+        Console.WriteLine("                        Backup Management Tool v1.1");
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("    ─────────────────────────────────────────────────────────────────\n");
         Console.ResetColor();
@@ -96,9 +97,27 @@ public class ConsoleView
         }
     }
 
+    private void ChooseLogFormat()
+    {
+        string[] formatOptions =
+        [
+            _language.GetString("log_format_json"),
+            _language.GetString("log_format_xml")
+        ];
+        int selected = ArrowSelect(formatOptions, _language.GetString("log_format_title"), false);
+
+        LogFormatSettings.Current = selected switch
+        {
+            0 => LogFormat.Json,
+            1 => LogFormat.Xml,
+            _ => LogFormat.Json,
+        };
+    }
+
     private void DisplayHeader()
     {
         string langLabel = _language.GetCurrentLanguage() == Lang.FR ? "FR" : "EN";
+        string logLabel = LogFormatSettings.Current == LogFormat.Xml ? "XML" : "JSON";
 
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("  ┌──────────────────────────────────────────┐");
@@ -108,7 +127,13 @@ public class ConsoleView
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.Write("  Langue : ");
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine(langLabel);
+        Console.Write(langLabel);
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write("    │    ");
+        Console.Write(_language.GetString("log_format_header_label"));
+        Console.Write(" : ");
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine(logLabel);
         Console.ResetColor();
         Console.WriteLine();
     }
