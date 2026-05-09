@@ -29,6 +29,7 @@ public class ConsoleView
         DisplayBanner();
         Thread.Sleep(1500);
         ChooseLanguage();
+        ChooseLogFormat();
 
         while (true)
         {
@@ -71,7 +72,7 @@ public class ConsoleView
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("    ─────────────────────────────────────────────────────────────────");
         Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine("                        Backup Management Tool v1.0");
+        Console.WriteLine("                        Backup Management Tool v1.1");
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("    ─────────────────────────────────────────────────────────────────\n");
         Console.ResetColor();
@@ -96,6 +97,17 @@ public class ConsoleView
         }
     }
 
+    private void ChooseLogFormat()
+    {
+        string[] fmtOptions =
+        [
+            _language.GetString("log_format_option_json"),
+            _language.GetString("log_format_option_xml")
+        ];
+        int selected = ArrowSelect(fmtOptions, _language.GetString("log_format_select_title"), false);
+        LogSettings.Format = selected == 1 ? LogFormat.Xml : LogFormat.Json;
+    }
+
     private void DisplayHeader()
     {
         string langLabel = _language.GetCurrentLanguage() == Lang.FR ? "FR" : "EN";
@@ -108,7 +120,12 @@ public class ConsoleView
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.Write("  Langue : ");
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine(langLabel);
+        Console.Write(langLabel);
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write("    │    ");
+        Console.Write("Journaux : ");
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine(LogSettings.Format == LogFormat.Xml ? "XML" : "JSON");
         Console.ResetColor();
         Console.WriteLine();
     }
@@ -428,6 +445,8 @@ public class ConsoleView
             || result == _language.GetString("work_saved")
             || result == _language.GetString("language_changed_to_fr")
             || result == _language.GetString("language_changed_to_en")
+            || result == _language.GetString("log_format_changed_json")
+            || result == _language.GetString("log_format_changed_xml")
             || result == _language.GetString("delete_success");
 
         if (result.StartsWith("false", StringComparison.OrdinalIgnoreCase))

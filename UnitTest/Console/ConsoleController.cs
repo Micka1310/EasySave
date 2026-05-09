@@ -6,6 +6,7 @@
 */
 
 using ControllerFile;
+using EasyLog;
 using LanguageFile;
 using System.Diagnostics;
 
@@ -91,12 +92,13 @@ public sealed class TestConsoleStrategy
 
         List<string> options = controller.GetOption();
 
-        Assert.HasCount(5, options);
+        Assert.HasCount(6, options);
         Assert.AreEqual("Afficher les travaux", options[0]);
         Assert.AreEqual("Créer un nouveau travaux", options[1]);
         Assert.AreEqual("Exécuter un travaux", options[2]);
         Assert.AreEqual(lang.GetString("option_delete"), options[3]);
         Assert.AreEqual(lang.GetString("option_language"), options[4]);
+        Assert.AreEqual(lang.GetString("option_log_format"), options[5]);
     }
 
     [TestMethod]
@@ -129,6 +131,18 @@ public sealed class TestConsoleStrategy
         Assert.HasCount(1, parameters);
         StringAssert.Contains(parameters[0], "FR");
         StringAssert.Contains(parameters[0], "EN");
+    }
+
+    [TestMethod]
+    public void GetParameter_Option6_Returns1Message_LogFormat()
+    {
+        Controller controller = new();
+
+        List<string> parameters = controller.GetParameterMessage(6);
+
+        Assert.HasCount(1, parameters);
+        StringAssert.Contains(parameters[0], "JSON");
+        StringAssert.Contains(parameters[0], "XML");
     }
 
     [TestMethod]
@@ -184,12 +198,13 @@ public sealed class TestConsoleStrategy
 
         List<string> options = controller.GetOption();
 
-        Assert.HasCount(5, options);
+        Assert.HasCount(6, options);
         Assert.AreEqual("Display works", options[0]);
         Assert.AreEqual("Create a new work", options[1]);
         Assert.AreEqual("Execute a work", options[2]);
         Assert.AreEqual(lang.GetString("option_delete"), options[3]);
         Assert.AreEqual(lang.GetString("option_language"), options[4]);
+        Assert.AreEqual(lang.GetString("option_log_format"), options[5]);
     }
 
     [TestMethod]
@@ -359,8 +374,10 @@ public sealed class TestConsoleStrategy
         Assert.AreEqual("Language changed to English", result);
 
         List<string> options = controller.GetOption();
+        Language lang = Language.GetInstance();
         Assert.AreEqual("Display works", options[0]);
         Assert.AreEqual("Change language", options[4]);
+        Assert.AreEqual(lang.GetString("option_log_format"), options[5]);
     }
 
     [TestMethod]
@@ -411,6 +428,19 @@ public sealed class TestConsoleStrategy
         string display = controller2.OptionExecuted(1, []);
         StringAssert.Contains(display, "persist");
         CleanupDirs(source, destination);
+    }
+
+    [TestMethod]
+    public void ChangeLogFormat_Option6_SetsXml()
+    {
+        LogSettings.Reset();
+        Language lang = Language.GetInstance();
+        lang.SetLanguage(Lang.EN);
+        Controller controller = new();
+
+        string result = controller.OptionExecuted(6, ["2"]);
+        Assert.AreEqual(lang.GetString("log_format_changed_xml"), result);
+        Assert.AreEqual(LogFormat.Xml, LogSettings.Format);
     }
 }
 
@@ -521,7 +551,9 @@ public sealed class TestLanguage
         Language lang = Language.GetInstance();
 
         string[] keys = [
-            "option_display", "option_create", "option_execute", "option_delete", "option_language",
+            "option_display", "option_create", "option_execute", "option_delete", "option_language", "option_log_format",
+            "log_format_select_title", "log_format_option_json", "log_format_option_xml", "log_format_choice",
+            "log_format_changed_json", "log_format_changed_xml",
             "create_name", "create_source", "create_destination", "create_type",
             "execute_input", "execute_jobs_header", "execute_no_jobs_yet",
             "backup_type_short_full", "backup_type_short_diff",
