@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <RootNamespace>EasySave.WPF</RootNamespace>
+    <AssemblyName>EasySave.WPF</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\⌗.jpg" />
+    <PackageReference Include="SharpVectors.Wpf" Version="1.8.4.2" />
+    <ProjectReference Include="..\CryptoSoft\CryptoSoft.csproj" />
+    <ProjectReference Include="..\Lib\Lib.csproj" />
+    <ProjectReference Include="..\EasyLog\EasyLog.csproj" />
+  </ItemGroup>
+
+</Project>

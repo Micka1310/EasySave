@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace EasyLog;
 
@@ -10,19 +12,22 @@ public class LogEntry
     public string DestinationFile { get; set; } = "";
     public long FileSize { get; set; }
     public long TransferTimeMs { get; set; }
+    public long EncryptionTimeMs { get; set; }
     public bool Success { get; set; } = true;
     public string ErrorMessage { get; set; } = "";
 }
 
 public interface ILogger
 {
-    void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, bool success = true, string errorMessage = "");
+    void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, long encryptionTimeMs = 0, bool success = true, string errorMessage = "");
 }
 
 public class Logger : ILogger
 {
     private readonly string logDirectory;
-    private static readonly object fileLock = new object();
+    private static readonly object FileLock = new();
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly XmlSerializer LogDocumentSerializer = new(typeof(LogDocument));
 
     public Logger()
     {
@@ -35,7 +40,7 @@ public class Logger : ILogger
         logDirectory = directory;
     }
 
-    public void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, bool success = true, string errorMessage = "")
+    public void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, long encryptionTimeMs = 0, bool success = true, string errorMessage = "")
     {
         LogEntry entry = new LogEntry
         {
@@ -45,27 +50,61 @@ public class Logger : ILogger
             DestinationFile = destinationFile,
             FileSize = fileSize,
             TransferTimeMs = transferTimeMs,
+            EncryptionTimeMs = encryptionTimeMs,
             Success = success,
             ErrorMessage = errorMessage
         };
 
-        string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".json";
+        string ext = LogFormatSettings.Current == LogFormat.Xml ? ".xml" : ".json";
+        string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ext;
         string filePath = Path.Combine(logDirectory, fileName);
 
-        lock (fileLock)
+        lock (FileLock)
         {
-            List<LogEntry> entries = new List<LogEntry>();
-
-            if (File.Exists(filePath))
-            {
-                string existingContent = File.ReadAllText(filePath);
-                entries = JsonSerializer.Deserialize<List<LogEntry>>(existingContent) ?? new List<LogEntry>();
-            }
-
-            entries.Add(entry);
-
-            string json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(filePath, json);
+            if (LogFormatSettings.Current == LogFormat.Xml)
+                AppendXml(filePath, entry);
+            else
+                AppendJson(filePath, entry);
         }
+    }
+
+    private static void AppendJson(string filePath, LogEntry entry)
+    {
+        List<LogEntry> entries = [];
+
+        if (File.Exists(filePath))
+        {
+            string existingContent = File.ReadAllText(filePath);
+            entries = JsonSerializer.Deserialize<List<LogEntry>>(existingContent) ?? [];
+        }
+
+        entries.Add(entry);
+        string json = JsonSerializer.Serialize(entries, JsonOptions);
+        File.WriteAllText(filePath, json);
+    }
+
+    private static void AppendXml(string filePath, LogEntry entry)
+    {
+        LogDocument doc = new LogDocument();
+
+        if (File.Exists(filePath))
+        {
+            try
+            {
+                using FileStream fs = File.OpenRead(filePath);
+                if (LogDocumentSerializer.Deserialize(fs) is LogDocument existing)
+                    doc = existing;
+            }
+            catch
+            {
+                doc = new LogDocument();
+            }
+        }
+
+        doc.Entries.Add(entry);
+
+        var settings = new XmlWriterSettings { Indent = true, OmitXmlDeclaration = false, Encoding = new System.Text.UTF8Encoding(false) };
+        using var writer = XmlWriter.Create(filePath, settings);
+        LogDocumentSerializer.Serialize(writer, doc);
     }
 }

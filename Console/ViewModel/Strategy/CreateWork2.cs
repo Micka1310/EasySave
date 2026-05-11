@@ -93,7 +93,7 @@ public class CreateWork2 : IStrategy
         });
 
         Logger logger = new Logger();
-        logger.WriteLogs(name, source, destination, 0, 0);
+        logger.WriteLogs(name, source, destination, 0, 0, 0);
 
         return lang.GetString("work_saved");
     }
