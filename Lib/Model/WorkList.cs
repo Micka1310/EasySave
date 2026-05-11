@@ -8,7 +8,10 @@ public class WorkList
     /// <summary>Limite par défaut (console, tests). L’app WPF peut augmenter <see cref="MaxWorkCount"/>.</summary>
     public const int MaxWorks = 5;
 
-    private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "works.json");
+    private static readonly string StorageDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "EasySave");
+    private static readonly string FilePath = Path.Combine(StorageDirectory, "works.json");
     private static readonly object FileLock = new();
 
     private List<Work> works;
@@ -54,6 +57,8 @@ public class WorkList
     {
         lock (FileLock)
         {
+            Directory.CreateDirectory(StorageDirectory);
+
             var data = works.Select(w => new WorkDto
             {
                 Name = w.GetName(),
@@ -71,6 +76,8 @@ public class WorkList
     {
         lock (FileLock)
         {
+            MigrateLegacyFileIfNeeded();
+
             if (!File.Exists(FilePath))
             {
                 return [];
@@ -89,6 +96,18 @@ public class WorkList
                 return [];
             }
         }
+    }
+
+    private static void MigrateLegacyFileIfNeeded()
+    {
+        string legacyPath = Path.Combine(AppContext.BaseDirectory, "works.json");
+        if (File.Exists(FilePath) || !File.Exists(legacyPath))
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(StorageDirectory);
+        File.Copy(legacyPath, FilePath, overwrite: false);
     }
 
     private class WorkDto

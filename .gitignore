@@ -432,4 +432,6 @@ FodyWeavers.xsd
 
 # EasySave build output at root
 /EasySave.exe
+/EasySave.wpf.exe
+/easysave.wpf.exe
 /pub/

@@ -12,7 +12,10 @@ public partial class MainViewModel
 {
     private readonly XmlSerializer _logDocumentSerializer = new(typeof(LogDocument));
 
-    public string DisplayWorksJsonPath => Path.Combine(AppContext.BaseDirectory, "works.json");
+    public string DisplayWorksJsonPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "EasySave",
+        "works.json");
     public string DisplayEasyLogFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EasySave");
     public string DisplayLogFilePath => _displayLogFilePath;
     public string DisplayCryptoSoftFolder => Path.Combine(AppContext.BaseDirectory, "CryptoSoft");
