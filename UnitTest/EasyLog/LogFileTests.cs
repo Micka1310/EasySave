@@ -4,6 +4,18 @@ using EasyLog;
 [TestClass]
 public class LogFileTests
 {
+    [TestInitialize]
+    public void Init()
+    {
+        LogFormatSettings.ResetToDefault();
+    }
+
+    [TestCleanup]
+    public void Cleanup()
+    {
+        LogFormatSettings.ResetToDefault();
+    }
+
     // Test : une entrée de log est correctement écrite dans le fichier JSON du jour
     [TestMethod]
     public void WriteLogs_ValidEntry_ShouldCreateLogFile()
@@ -53,5 +65,25 @@ public class LogFileTests
         string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".json";
         string filePath = Path.Combine(AppContext.BaseDirectory, fileName);
         Assert.IsTrue(File.Exists(filePath));
+    }
+
+    [TestMethod]
+    public void WriteLogs_XmlFormat_ShouldCreateXmlFileWithEntries()
+    {
+        LogFormatSettings.Current = LogFormat.Xml;
+        Logger logger = new Logger(AppContext.BaseDirectory);
+        string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".xml";
+        string filePath = Path.Combine(AppContext.BaseDirectory, fileName);
+        if (File.Exists(filePath))
+            File.Delete(filePath);
+
+        logger.WriteLogs("XmlWork", @"C:\src\a.txt", @"C:\dst\a.txt", 100, 10);
+        logger.WriteLogs("XmlWork2", @"C:\src\b.txt", @"C:\dst\b.txt", 200, 20);
+
+        Assert.IsTrue(File.Exists(filePath));
+        string xml = File.ReadAllText(filePath);
+        StringAssert.Contains(xml, "XmlWork");
+        StringAssert.Contains(xml, "XmlWork2");
+        StringAssert.Contains(xml, "<Logs");
     }
 }
