@@ -2,6 +2,10 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
+using System.Xml.Serialization;
 using System.Windows.Input;
 using Application = System.Windows.Application;
 using EasyLog;
@@ -22,6 +26,8 @@ public class MainViewModel : ViewModelBase
     private readonly Language _lang;
     private readonly BackupService _backupService = new BackupService();
     private readonly GeneralSettingsService _generalSettingsService = new GeneralSettingsService();
+    private readonly XmlSerializer _logDocumentSerializer = new(typeof(LogDocument));
+    private GeneralSettings _settings = new();
 
     public ObservableCollection<WorkItemViewModel> Works { get; } = [];
     public ObservableCollection<WorkItemViewModel> PagedWorks { get; } = [];
@@ -100,6 +106,33 @@ public class MainViewModel : ViewModelBase
 
     public string DisplayWorksJsonPath => Path.Combine(AppContext.BaseDirectory, "works.json");
     public string DisplayEasyLogFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EasySave");
+    public string DisplayLogFilePath => _displayLogFilePath;
+
+    private string _displayLogFilePath = "";
+    private string _logPreview = "";
+
+    public string LogPreview
+    {
+        get => _logPreview;
+        private set => SetField(ref _logPreview, value);
+    }
+
+    public bool HasLogPreview => !string.IsNullOrWhiteSpace(_logPreview);
+
+    private bool _isLogFormatJson = true;
+    public bool IsLogFormatJson
+    {
+        get => _isLogFormatJson;
+        set
+        {
+            if (!SetField(ref _isLogFormatJson, value))
+            {
+                return;
+            }
+
+            ApplyLogFormatPreference();
+        }
+    }
 
     private string _customEncryptionExtensionInput = "";
     public string CustomEncryptionExtensionInput
@@ -196,6 +229,8 @@ public class MainViewModel : ViewModelBase
     public ICommand PrevPageCommand { get; }
     public ICommand NextPageCommand { get; }
     public ICommand AddCustomEncryptionExtensionCommand { get; }
+    public ICommand RefreshLogsCommand { get; }
+    public ICommand OpenLogsFolderCommand { get; }
 
     public Action<CreateWorkViewModel>? RequestShowCreateDialog { get; set; }
 
@@ -206,6 +241,11 @@ public class MainViewModel : ViewModelBase
 
         _lang = Language.GetInstance();
         _isFrench = _lang.GetCurrentLanguage() == Lang.FR;
+        _settings = _generalSettingsService.Load();
+
+        _isLogFormatJson = !string.Equals(_settings.LogFormat, "xml", StringComparison.OrdinalIgnoreCase);
+        LogFormatSettings.Current = _isLogFormatJson ? LogFormat.Json : LogFormat.Xml;
+
         InitializeEncryptionExtensions();
 
         foreach (Work w in _workList.GetWork())
@@ -226,6 +266,10 @@ public class MainViewModel : ViewModelBase
         PrevPageCommand = new RelayCommand(_ => CurrentPage -= 1, _ => CurrentPage > 1);
         NextPageCommand = new RelayCommand(_ => CurrentPage += 1, _ => CurrentPage < TotalPages);
         AddCustomEncryptionExtensionCommand = new RelayCommand(_ => AddCustomEncryptionExtension(), _ => true);
+        RefreshLogsCommand = new RelayCommand(_ => RefreshLogPreview(), _ => true);
+        OpenLogsFolderCommand = new RelayCommand(_ => OpenLogsFolder(), _ => true);
+
+        RefreshLogPreview();
     }
 
     private void OnWorksCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -338,11 +382,18 @@ public class MainViewModel : ViewModelBase
     public string LblSettingsTitle => _lang.GetString("wpf_settings_title");
     public string LblSettingsSubtitle => _lang.GetString("wpf_settings_subtitle");
     public string LblSettingsSectionDisplay => _lang.GetString("wpf_settings_section_display");
+    public string LblSectionLogFormat => _lang.GetString("log_format_header_label");
+    public string LblLogJson => _lang.GetString("log_format_json");
+    public string LblLogXml => _lang.GetString("log_format_xml");
     public string LblSettingsPageSize => _lang.GetString("wpf_settings_page_size");
     public string LblSettingsPageSizeHint => _lang.GetString("wpf_settings_page_size_hint");
     public string LblSettingsSectionData => _lang.GetString("wpf_settings_section_data");
     public string LblSettingsDataFolder => _lang.GetString("wpf_settings_data_folder");
     public string LblSettingsWorksFile => _lang.GetString("wpf_settings_works_file");
+    public string LblSettingsLogsFile => _lang.GetString("wpf_settings_logs_file");
+    public string LblSettingsLogsPreview => _lang.GetString("wpf_settings_logs_preview");
+    public string LblSettingsLogsRefresh => _lang.GetString("wpf_settings_logs_refresh");
+    public string LblSettingsOpenLogsFolder => _lang.GetString("wpf_settings_open_logs_folder");
     public string LblSettingsSectionEncryption => _lang.GetString("wpf_settings_section_encryption");
     public string LblSettingsEncryptionExtensions => _lang.GetString("wpf_settings_encryption_extensions");
     public string LblSettingsEncryptionSelected => _lang.GetString("wpf_settings_encryption_selected");
@@ -361,6 +412,9 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblAppSubtitle));
         OnPropertyChanged(nameof(LblSectionMenu));
         OnPropertyChanged(nameof(LblSectionLanguage));
+        OnPropertyChanged(nameof(LblSectionLogFormat));
+        OnPropertyChanged(nameof(LblLogJson));
+        OnPropertyChanged(nameof(LblLogXml));
         OnPropertyChanged(nameof(LblNavWorks));
         OnPropertyChanged(nameof(LblNavSettings));
         OnPropertyChanged(nameof(LblHeader));
@@ -401,6 +455,10 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblSettingsSectionData));
         OnPropertyChanged(nameof(LblSettingsDataFolder));
         OnPropertyChanged(nameof(LblSettingsWorksFile));
+        OnPropertyChanged(nameof(LblSettingsLogsFile));
+        OnPropertyChanged(nameof(LblSettingsLogsPreview));
+        OnPropertyChanged(nameof(LblSettingsLogsRefresh));
+        OnPropertyChanged(nameof(LblSettingsOpenLogsFolder));
         OnPropertyChanged(nameof(LblSettingsSectionEncryption));
         OnPropertyChanged(nameof(LblSettingsEncryptionExtensions));
         OnPropertyChanged(nameof(LblSettingsEncryptionSelected));
@@ -417,6 +475,8 @@ public class MainViewModel : ViewModelBase
 
         foreach (WorkItemViewModel w in Works)
             w.RefreshLocalization();
+
+        RefreshLogPreview();
     }
 
     private List<WorkItemViewModel> GetSelected() => Works.Where(w => w.IsSelected).ToList();
@@ -543,7 +603,7 @@ public class MainViewModel : ViewModelBase
     private void InitializeEncryptionExtensions()
     {
         string[] defaults = [".txt", ".docx", ".pdf", ".xlsx", ".pptx", ".zip", ".json", ".xml"];
-        HashSet<string> selected = _generalSettingsService.Load().EncryptedExtensions
+        HashSet<string> selected = _settings.EncryptedExtensions
             .Select(NormalizeExtension)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -615,8 +675,11 @@ public class MainViewModel : ViewModelBase
 
         _generalSettingsService.Save(new GeneralSettings
         {
-            EncryptedExtensions = selected
+            EncryptedExtensions = selected,
+            LogFormat = _settings.LogFormat
         });
+
+        _settings.EncryptedExtensions = selected;
     }
 
     private static string NormalizeExtension(string value)
@@ -628,5 +691,133 @@ public class MainViewModel : ViewModelBase
         }
 
         return v.StartsWith('.') ? v : "." + v;
+    }
+
+    private void ApplyLogFormatPreference()
+    {
+        LogFormatSettings.Current = IsLogFormatJson ? LogFormat.Json : LogFormat.Xml;
+        _settings.LogFormat = IsLogFormatJson ? "json" : "xml";
+        _generalSettingsService.Save(_settings);
+        RefreshLogPreview();
+    }
+
+    private void RefreshLogPreview()
+    {
+        string extension = IsLogFormatJson ? ".json" : ".xml";
+        _displayLogFilePath = "";
+        OnPropertyChanged(nameof(DisplayLogFilePath));
+
+        if (!Directory.Exists(DisplayEasyLogFolder))
+        {
+            LogPreview = IsFrench
+                ? "Le dossier de logs n'existe pas encore."
+                : "The log folder does not exist yet.";
+            OnPropertyChanged(nameof(HasLogPreview));
+            return;
+        }
+
+        FileInfo? latest = new DirectoryInfo(DisplayEasyLogFolder)
+            .GetFiles("*" + extension, SearchOption.TopDirectoryOnly)
+            .OrderByDescending(f => f.LastWriteTimeUtc)
+            .FirstOrDefault();
+
+        if (latest is null)
+        {
+            LogPreview = IsFrench
+                ? $"Aucun log {extension} disponible pour le moment."
+                : $"No {extension} log available yet.";
+            OnPropertyChanged(nameof(HasLogPreview));
+            return;
+        }
+
+        _displayLogFilePath = latest.FullName;
+        OnPropertyChanged(nameof(DisplayLogFilePath));
+
+        try
+        {
+            List<LogEntry> entries = IsLogFormatJson
+                ? ReadJsonLogEntries(latest.FullName)
+                : ReadXmlLogEntries(latest.FullName);
+            LogPreview = BuildLogPreview(entries);
+        }
+        catch
+        {
+            LogPreview = IsFrench
+                ? "Impossible de lire ce fichier de log. Cliquez sur rafraichir ou ouvrez le dossier."
+                : "Unable to read this log file. Try refresh or open the folder.";
+        }
+
+        OnPropertyChanged(nameof(HasLogPreview));
+    }
+
+    private static List<LogEntry> ReadJsonLogEntries(string filePath)
+    {
+        string content = File.ReadAllText(filePath);
+        return JsonSerializer.Deserialize<List<LogEntry>>(content) ?? [];
+    }
+
+    private List<LogEntry> ReadXmlLogEntries(string filePath)
+    {
+        using FileStream stream = File.OpenRead(filePath);
+        LogDocument? doc = _logDocumentSerializer.Deserialize(stream) as LogDocument;
+        return doc?.Entries ?? [];
+    }
+
+    private string BuildLogPreview(List<LogEntry> entries)
+    {
+        if (entries.Count == 0)
+        {
+            return IsFrench
+                ? "Le fichier de log est vide."
+                : "The log file is empty.";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        IEnumerable<LogEntry> selected = entries.TakeLast(25);
+        foreach (LogEntry entry in selected)
+        {
+            string status = entry.Success
+                ? (IsFrench ? "OK" : "OK")
+                : (IsFrench ? "ERREUR" : "ERROR");
+            sb.Append(entry.Timestamp);
+            sb.Append(" | ");
+            sb.Append(entry.WorkName);
+            sb.Append(" | ");
+            sb.Append(status);
+            sb.Append(" | ");
+            sb.Append(Path.GetFileName(entry.SourceFile));
+            sb.Append(" -> ");
+            sb.Append(Path.GetFileName(entry.DestinationFile));
+            sb.Append(" | ");
+            sb.Append(entry.TransferTimeMs);
+            sb.Append("ms");
+
+            if (!entry.Success && !string.IsNullOrWhiteSpace(entry.ErrorMessage))
+            {
+                sb.Append(" | ");
+                sb.Append(entry.ErrorMessage);
+            }
+
+            sb.AppendLine();
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private void OpenLogsFolder()
+    {
+        try
+        {
+            Directory.CreateDirectory(DisplayEasyLogFolder);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = DisplayEasyLogFolder,
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            ShowBanner(IsFrench ? "Impossible d'ouvrir le dossier des logs." : "Unable to open log folder.", "warning");
+        }
     }
 }

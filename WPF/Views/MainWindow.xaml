@@ -84,6 +84,29 @@
                 <!-- Toggle langue + version -->
                 <StackPanel Grid.Row="2" Margin="20,0,20,24">
                     <Border Style="{StaticResource Card}" Padding="14" CornerRadius="10"
+                            Background="{StaticResource SurfaceElevatedBrush}"
+                            Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="{Binding LblSectionLogFormat}" FontSize="10" FontWeight="Bold"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Margin="0,0,0,8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <RadioButton Grid.Column="0" Content="JSON" GroupName="LogFormat"
+                                             IsChecked="{Binding IsLogFormatJson, Mode=TwoWay}"
+                                             Style="{StaticResource SidebarItem}"
+                                             Margin="0" Padding="8" HorizontalContentAlignment="Center" />
+                                <RadioButton Grid.Column="1" Content="XML" GroupName="LogFormat"
+                                             IsChecked="{Binding IsLogFormatJson, Converter={StaticResource InvBool}, Mode=TwoWay}"
+                                             Style="{StaticResource SidebarItem}"
+                                             Margin="0" Padding="8" HorizontalContentAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" Padding="14" CornerRadius="10"
                             Background="{StaticResource SurfaceElevatedBrush}">
                         <StackPanel>
                             <TextBlock Text="{Binding LblSectionLanguage}" FontSize="10" FontWeight="Bold"
@@ -513,6 +536,46 @@
                                                Foreground="{StaticResource TextPrimaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
+                                <TextBlock Text="{Binding LblSettingsLogsFile}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,12,0,4" />
+                                <Border Background="{StaticResource SurfaceElevatedBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                        CornerRadius="8" Padding="12,10">
+                                    <TextBlock Text="{Binding DisplayLogFilePath}"
+                                               FontFamily="Consolas"
+                                               FontSize="12"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               TextWrapping="Wrap" />
+                                </Border>
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Command="{Binding RefreshLogsCommand}"
+                                            Content="{Binding LblSettingsLogsRefresh}" />
+                                    <Button Grid.Column="1"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Margin="8,0,0,0"
+                                            Command="{Binding OpenLogsFolderCommand}"
+                                            Content="{Binding LblSettingsOpenLogsFolder}" />
+                                </Grid>
+                                <TextBlock Text="{Binding LblSettingsLogsPreview}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,12,0,4" />
+                                <TextBox Text="{Binding LogPreview, Mode=OneWay}"
+                                         IsReadOnly="True"
+                                         MinHeight="180"
+                                         MaxHeight="300"
+                                         VerticalScrollBarVisibility="Auto"
+                                         TextWrapping="Wrap"
+                                         FontFamily="Consolas"
+                                         Style="{StaticResource ModernTextBox}" />
                             </StackPanel>
                         </Border>
 

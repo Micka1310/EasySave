@@ -40,4 +40,5 @@ public sealed class GeneralSettingsService
 public sealed class GeneralSettings
 {
     public List<string> EncryptedExtensions { get; set; } = [];
+    public string LogFormat { get; set; } = "json";
 }
