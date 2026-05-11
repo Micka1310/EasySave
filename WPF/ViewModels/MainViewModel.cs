@@ -156,38 +156,12 @@ public class MainViewModel : ViewModelBase
             if (SetField(ref _isRunning, value))
             {
                 OnPropertyChanged(nameof(CanInteract));
-                RefreshTransportBindings();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
     }
 
     public bool CanInteract => !IsRunning;
-
-    public bool ShowMainRunActions => !IsRunning;
-
-    public bool ShowBackupTransportActions => IsRunning;
-
-    private volatile bool _runPaused;
-
-    public bool IsRunPaused
-    {
-        get => _runPaused;
-        private set
-        {
-            if (_runPaused == value) return;
-            _runPaused = value;
-            OnPropertyChanged(nameof(IsRunPaused));
-            RefreshTransportBindings();
-            CommandManager.InvalidateRequerySuggested();
-        }
-    }
-
-    public bool ShowPauseButton => IsRunning && !IsRunPaused;
-    public bool ShowResumeButton => IsRunning && IsRunPaused;
-
-    private CancellationTokenSource? _runCts;
-    private WorkItemViewModel? _currentRunningVm;
 
     private string _statusBanner = "";
     public string StatusBanner
@@ -223,9 +197,6 @@ public class MainViewModel : ViewModelBase
     public ICommand RunSelectedCommand { get; }
     public ICommand RunAllCommand { get; }
     public ICommand DeleteWorkCommand { get; }
-    public ICommand PauseBackupCommand { get; }
-    public ICommand ResumeBackupCommand { get; }
-    public ICommand StopBackupCommand { get; }
     public ICommand PrevPageCommand { get; }
     public ICommand NextPageCommand { get; }
     public ICommand AddCustomEncryptionExtensionCommand { get; }
@@ -260,9 +231,6 @@ public class MainViewModel : ViewModelBase
         RunSelectedCommand = new RelayCommand(async _ => await RunWorksAsync(GetSelected()), _ => CanInteract && GetSelected().Any());
         RunAllCommand = new RelayCommand(async _ => await RunWorksAsync(Works.ToList()), _ => CanInteract && Works.Count > 0);
         DeleteWorkCommand = new RelayCommand(p => DeleteWork(p as WorkItemViewModel), _ => CanInteract);
-        PauseBackupCommand = new RelayCommand(_ => PauseBackup(), _ => IsRunning && !IsRunPaused);
-        ResumeBackupCommand = new RelayCommand(_ => ResumeBackup(), _ => IsRunning && IsRunPaused);
-        StopBackupCommand = new RelayCommand(_ => StopBackup(), _ => IsRunning);
         PrevPageCommand = new RelayCommand(_ => CurrentPage -= 1, _ => CurrentPage > 1);
         NextPageCommand = new RelayCommand(_ => CurrentPage += 1, _ => CurrentPage < TotalPages);
         AddCustomEncryptionExtensionCommand = new RelayCommand(_ => AddCustomEncryptionExtension(), _ => true);
@@ -309,34 +277,6 @@ public class MainViewModel : ViewModelBase
         CommandManager.InvalidateRequerySuggested();
     }
 
-    private void RefreshTransportBindings()
-    {
-        OnPropertyChanged(nameof(ShowMainRunActions));
-        OnPropertyChanged(nameof(ShowBackupTransportActions));
-        OnPropertyChanged(nameof(ShowPauseButton));
-        OnPropertyChanged(nameof(ShowResumeButton));
-    }
-
-    private void PauseBackup()
-    {
-        IsRunPaused = true;
-        if (_currentRunningVm != null)
-            _currentRunningVm.StatusKey = "Paused";
-    }
-
-    private void ResumeBackup()
-    {
-        IsRunPaused = false;
-        if (_currentRunningVm != null)
-            _currentRunningVm.StatusKey = "Active";
-    }
-
-    private void StopBackup()
-    {
-        _runCts?.Cancel();
-        IsRunPaused = false;
-    }
-
     public string LblPrimaryHeader => ShowWorksPanel ? LblHeader : LblSettingsTitle;
     public string LblPrimarySubtitle => ShowWorksPanel ? LblCount : LblSettingsSubtitle;
 
@@ -353,9 +293,6 @@ public class MainViewModel : ViewModelBase
     public string LblNew => IsFrench ? "Nouveau" : "New";
     public string LblRunSelected => IsFrench ? "Exécuter la sélection" : "Run selected";
     public string LblRunAll => IsFrench ? "Tout exécuter" : "Run all";
-    public string LblPause => _lang.GetString("wpf_pause");
-    public string LblResume => _lang.GetString("wpf_resume");
-    public string LblStop => _lang.GetString("wpf_stop");
     public string LblEmptyTitle => IsFrench ? "Aucun travail pour le moment" : "No jobs yet";
     public string LblEmptySubtitle => IsFrench
         ? "Créez votre premier travail de sauvegarde pour commencer."
@@ -424,9 +361,6 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblNew));
         OnPropertyChanged(nameof(LblRunSelected));
         OnPropertyChanged(nameof(LblRunAll));
-        OnPropertyChanged(nameof(LblPause));
-        OnPropertyChanged(nameof(LblResume));
-        OnPropertyChanged(nameof(LblStop));
         OnPropertyChanged(nameof(LblEmptyTitle));
         OnPropertyChanged(nameof(LblEmptySubtitle));
         OnPropertyChanged(nameof(LblCreateFirst));
@@ -514,21 +448,13 @@ public class MainViewModel : ViewModelBase
     {
         if (targets.Count == 0 || IsRunning) return;
         IsRunning = true;
-        IsRunPaused = false;
         StatusBanner = "";
-
-        using CancellationTokenSource cts = new CancellationTokenSource();
-        _runCts = cts;
         List<string> errors = [];
-        bool stoppedByUser = false;
 
         try
         {
             foreach (WorkItemViewModel vm in targets)
             {
-                cts.Token.ThrowIfCancellationRequested();
-
-                _currentRunningVm = vm;
                 vm.Reset();
                 vm.StatusKey = "Active";
 
@@ -537,8 +463,6 @@ public class MainViewModel : ViewModelBase
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         vm.UpdateFromState(state);
-                        if (IsRunPaused)
-                            vm.StatusKey = "Paused";
                     });
                 });
 
@@ -547,15 +471,8 @@ public class MainViewModel : ViewModelBase
                     vm.Work,
                     reporter,
                     jobErrors,
-                    cts.Token,
-                    () => IsRunPaused));
-
-                if (cts.IsCancellationRequested)
-                {
-                    vm.StatusKey = "Cancelled";
-                    stoppedByUser = true;
-                    break;
-                }
+                    CancellationToken.None,
+                    () => false));
 
                 vm.StatusKey = ok ? "Done" : "Error";
 
@@ -563,22 +480,9 @@ public class MainViewModel : ViewModelBase
                     errors.Add($"[{vm.Name}] {e}");
             }
         }
-        catch (OperationCanceledException)
-        {
-            stoppedByUser = true;
-        }
         finally
         {
-            _currentRunningVm = null;
-            _runCts = null;
-            IsRunPaused = false;
             IsRunning = false;
-        }
-
-        if (stoppedByUser)
-        {
-            ShowBanner(_lang.GetString("wpf_backup_stopped"), "warning");
-            return;
         }
 
         if (errors.Count == 0)
@@ -590,7 +494,7 @@ public class MainViewModel : ViewModelBase
             string head = IsFrench
                 ? $"Sauvegarde terminée avec {errors.Count} erreur(s)."
                 : $"Backup finished with {errors.Count} error(s).";
-            ShowBanner(head + "\n" + string.Join("\n", errors.Take(3)), "error");
+            ShowBanner(head + "\n" + string.Join("\n", errors), "error");
         }
     }
 
