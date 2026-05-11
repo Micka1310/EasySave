@@ -17,14 +17,25 @@ public partial class MainWindow : Window
 
     private void ShowCreateDialog(CreateWorkViewModel vm)
     {
-        CreateWorkDialog dlg = new CreateWorkDialog
+        try
         {
-            DataContext = vm,
-            Owner = this,
-            Tag = _vm,
-        };
+            CreateWorkDialog dlg = new CreateWorkDialog
+            {
+                DataContext = vm,
+                Owner = this,
+                Tag = _vm,
+            };
 
-        vm.CloseRequested += (_, _) => dlg.Close();
-        dlg.ShowDialog();
+            vm.CloseRequested += (_, _) => dlg.Close();
+            dlg.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Impossible d'ouvrir la fenêtre de création.\n\n{ex.Message}",
+                "EasySave",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        }
     }
 }
