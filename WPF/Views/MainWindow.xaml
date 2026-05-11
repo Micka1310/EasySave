@@ -3,12 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:EasySave.WPF.ViewModels"
         xmlns:h="clr-namespace:EasySave.WPF.Helpers"
-        xmlns:svgc="http://sharpvectors.codeplex.com/svgc/"
         Title="EasySave v2"
-        Icon="/EasySave.WPF;component/Assets/app.ico"
+        Icon="/EasySave.WPF;component/Assets/⌗.jpg"
         Height="780" Width="1280"
         MinHeight="600" MinWidth="1000"
         WindowStartupLocation="CenterScreen"
+        WindowState="Maximized"
         Style="{StaticResource AppWindow}">
 
     <Window.Resources>
@@ -24,7 +24,7 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="240" />
+            <ColumnDefinition Width="280" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -45,9 +45,8 @@
                         <Border Width="40" Height="40" CornerRadius="10"
                                 Background="{StaticResource SurfaceElevatedBrush}"
                                 ClipToBounds="True">
-                            <svgc:SvgViewbox Source="/EasySave.WPF;component/Views/logo.svg"
-                                             Stretch="Uniform"
-                                             Margin="5" />
+                            <Image Source="/EasySave.WPF;component/Assets/⌗.jpg"
+                                   Stretch="UniformToFill" />
                         </Border>
                         <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="{Binding LblAppTitle}"
@@ -137,15 +136,50 @@
         <!-- ========================================================== -->
         <!-- ZONE PRINCIPALE -->
         <!-- ========================================================== -->
-        <Grid Grid.Column="1">
+        <Grid Grid.Column="1" Margin="0,0,8,0">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
+            <!-- Hero -->
+            <Border Grid.Row="0" Margin="24,24,24,8"
+                    Background="{StaticResource HeroGradientBrush}"
+                    CornerRadius="18"
+                    Padding="24,20"
+                    BorderBrush="{StaticResource HeroOverlayBrush}"
+                    BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="EasySave Experience"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding LblAppSubtitle}"
+                                   Margin="0,6,0,0"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                    </StackPanel>
+                    <Border Grid.Column="1"
+                            Background="#22000000"
+                            CornerRadius="999"
+                            Padding="14,8"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{Binding LblCount}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentBrush}" />
+                    </Border>
+                </Grid>
+            </Border>
+
             <!-- Header (titre + actions) -->
-            <Grid Grid.Row="0" Margin="32,32,32,16">
+            <Grid Grid.Row="1" Margin="32,16,32,16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -202,7 +236,7 @@
             </Grid>
 
             <!-- Banner de statut -->
-            <Border Grid.Row="1" Margin="32,0,32,16"
+            <Border Grid.Row="2" Margin="32,0,32,16"
                     Visibility="{Binding HasStatusBanner, Converter={StaticResource BoolToVis}}"
                     Background="{StaticResource SurfaceBrush}"
                     BorderBrush="{Binding StatusBannerKind, Converter={StaticResource BannerKindToBrush}}"
@@ -226,7 +260,7 @@
             </Border>
 
             <!-- Travaux (liste + pagination) ou Paramètres -->
-            <Grid Grid.Row="2" Margin="32,0,32,32">
+            <Grid Grid.Row="3" Margin="32,0,32,32">
                 <!-- ——— Vue travaux ——— -->
                 <Grid Visibility="{Binding ShowWorksPanel, Converter={StaticResource BoolToVis}}">
                     <Grid.RowDefinitions>
@@ -278,9 +312,8 @@
                                 <Border Width="64" Height="64" CornerRadius="32"
                                         Background="{StaticResource SurfaceElevatedBrush}"
                                         ClipToBounds="True">
-                                    <svgc:SvgViewbox Source="/EasySave.WPF;component/Views/logo.svg"
-                                                     Stretch="Uniform"
-                                                     Margin="10" />
+                                    <Image Source="/EasySave.WPF;component/Assets/⌗.jpg"
+                                           Stretch="UniformToFill" />
                                 </Border>
                                 <TextBlock Text="{Binding LblEmptyTitle}"
                                            FontSize="18" FontWeight="SemiBold" Margin="0,16,0,4"
@@ -425,7 +458,7 @@
                 <!-- ——— Vue paramètres ——— -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               Visibility="{Binding ShowSettingsPanel, Converter={StaticResource BoolToVis}}">
-                    <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+                    <StackPanel MaxWidth="980" HorizontalAlignment="Center">
                         <Border Style="{StaticResource Card}" Margin="0,0,0,16" Padding="24">
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionDisplay}"
@@ -548,12 +581,31 @@
                                             Command="{Binding AddBusinessSoftwareCommand}"
                                             Content="{Binding LblSettingsBusinessSoftwareAddButton}" />
                                 </Grid>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Style="{StaticResource SecondaryButton}"
+                                            Command="{Binding ResetBusinessSoftwareDefaultsCommand}"
+                                            Content="{Binding LblSettingsBusinessSoftwareResetDefaults}" />
+                                    <Button Style="{StaticResource DangerButton}"
+                                            Margin="8,0,0,0"
+                                            Command="{Binding ClearBusinessSoftwareCommand}"
+                                            Content="{Binding LblSettingsBusinessSoftwareClearAll}" />
+                                </StackPanel>
                                 <TextBlock Text="{Binding LblSettingsBusinessSoftwareList}"
                                            FontSize="12"
                                            Foreground="{StaticResource TextMutedBrush}"
                                            Margin="0,10,0,4" />
+                                <Border Background="{StaticResource SurfaceElevatedBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                        CornerRadius="8" Padding="12,10" Margin="0,2,0,8"
+                                        Visibility="{Binding HasBusinessSoftwareConfigured, Converter={StaticResource BoolToVisInv}}">
+                                    <TextBlock Text="{Binding LblSettingsBusinessSoftwareEmpty}"
+                                               FontSize="12"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               TextWrapping="Wrap" />
+                                </Border>
                                 <ItemsControl Margin="0,2,0,8"
-                                              ItemsSource="{Binding BusinessSoftwareNames}">
+                                              ItemsSource="{Binding BusinessSoftwareNames}"
+                                              Visibility="{Binding HasBusinessSoftwareConfigured, Converter={StaticResource BoolToVis}}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <WrapPanel />

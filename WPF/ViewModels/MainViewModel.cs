@@ -213,6 +213,8 @@ public class MainViewModel : ViewModelBase
     public ICommand AddCustomEncryptionExtensionCommand { get; }
     public ICommand AddBusinessSoftwareCommand { get; }
     public ICommand RemoveBusinessSoftwareCommand { get; }
+    public ICommand ResetBusinessSoftwareDefaultsCommand { get; }
+    public ICommand ClearBusinessSoftwareCommand { get; }
     public ICommand RefreshLogsCommand { get; }
     public ICommand OpenLogsFolderCommand { get; }
 
@@ -250,6 +252,8 @@ public class MainViewModel : ViewModelBase
         AddCustomEncryptionExtensionCommand = new RelayCommand(_ => AddCustomEncryptionExtension(), _ => true);
         AddBusinessSoftwareCommand = new RelayCommand(_ => AddBusinessSoftware(), _ => true);
         RemoveBusinessSoftwareCommand = new RelayCommand(p => RemoveBusinessSoftware(p as string), _ => true);
+        ResetBusinessSoftwareDefaultsCommand = new RelayCommand(_ => ResetBusinessSoftwareDefaults(), _ => true);
+        ClearBusinessSoftwareCommand = new RelayCommand(_ => ClearBusinessSoftware(), _ => BusinessSoftwareNames.Count > 0);
         RefreshLogsCommand = new RelayCommand(_ => RefreshLogPreview(), _ => true);
         OpenLogsFolderCommand = new RelayCommand(_ => OpenLogsFolder(), _ => true);
 
@@ -352,6 +356,9 @@ public class MainViewModel : ViewModelBase
     public string LblSettingsBusinessSoftwareHint => _lang.GetString("wpf_settings_business_software_hint");
     public string LblSettingsBusinessSoftwareAddButton => _lang.GetString("wpf_settings_business_software_add_button");
     public string LblSettingsBusinessSoftwareList => _lang.GetString("wpf_settings_business_software_list");
+    public string LblSettingsBusinessSoftwareResetDefaults => _lang.GetString("wpf_settings_business_software_reset_defaults");
+    public string LblSettingsBusinessSoftwareClearAll => _lang.GetString("wpf_settings_business_software_clear_all");
+    public string LblSettingsBusinessSoftwareEmpty => _lang.GetString("wpf_settings_business_software_empty");
     public string LblSettingsSectionEncryption => _lang.GetString("wpf_settings_section_encryption");
     public string LblSettingsEncryptionExtensions => _lang.GetString("wpf_settings_encryption_extensions");
     public string LblSettingsEncryptionSelected => _lang.GetString("wpf_settings_encryption_selected");
@@ -419,6 +426,9 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblSettingsBusinessSoftwareHint));
         OnPropertyChanged(nameof(LblSettingsBusinessSoftwareAddButton));
         OnPropertyChanged(nameof(LblSettingsBusinessSoftwareList));
+        OnPropertyChanged(nameof(LblSettingsBusinessSoftwareResetDefaults));
+        OnPropertyChanged(nameof(LblSettingsBusinessSoftwareClearAll));
+        OnPropertyChanged(nameof(LblSettingsBusinessSoftwareEmpty));
         OnPropertyChanged(nameof(LblSettingsSectionEncryption));
         OnPropertyChanged(nameof(LblSettingsEncryptionExtensions));
         OnPropertyChanged(nameof(LblSettingsEncryptionSelected));
@@ -651,6 +661,8 @@ public class MainViewModel : ViewModelBase
         _settings.BusinessSoftwareNames = BusinessSoftwareNames.ToList();
         _generalSettingsService.Save(_settings);
         OnPropertyChanged(nameof(MonitoredBusinessSoftwareDisplay));
+        OnPropertyChanged(nameof(HasBusinessSoftwareConfigured));
+        CommandManager.InvalidateRequerySuggested();
     }
 
     private void AddBusinessSoftware()
@@ -681,6 +693,8 @@ public class MainViewModel : ViewModelBase
         _settings.BusinessSoftwareNames = BusinessSoftwareNames.ToList();
         _generalSettingsService.Save(_settings);
         OnPropertyChanged(nameof(MonitoredBusinessSoftwareDisplay));
+        OnPropertyChanged(nameof(HasBusinessSoftwareConfigured));
+        CommandManager.InvalidateRequerySuggested();
     }
 
     private void RemoveBusinessSoftware(string? processName)
@@ -703,7 +717,33 @@ public class MainViewModel : ViewModelBase
         _settings.BusinessSoftwareNames = BusinessSoftwareNames.ToList();
         _generalSettingsService.Save(_settings);
         OnPropertyChanged(nameof(MonitoredBusinessSoftwareDisplay));
+        OnPropertyChanged(nameof(HasBusinessSoftwareConfigured));
+        CommandManager.InvalidateRequerySuggested();
     }
+
+    private void ResetBusinessSoftwareDefaults()
+    {
+        BusinessSoftwareNames.Clear();
+        BusinessSoftwareNames.Add("notepad");
+        BusinessSoftwareNames.Add("calc");
+        _settings.BusinessSoftwareNames = BusinessSoftwareNames.ToList();
+        _generalSettingsService.Save(_settings);
+        OnPropertyChanged(nameof(MonitoredBusinessSoftwareDisplay));
+        OnPropertyChanged(nameof(HasBusinessSoftwareConfigured));
+        CommandManager.InvalidateRequerySuggested();
+    }
+
+    private void ClearBusinessSoftware()
+    {
+        BusinessSoftwareNames.Clear();
+        _settings.BusinessSoftwareNames = [];
+        _generalSettingsService.Save(_settings);
+        OnPropertyChanged(nameof(MonitoredBusinessSoftwareDisplay));
+        OnPropertyChanged(nameof(HasBusinessSoftwareConfigured));
+        CommandManager.InvalidateRequerySuggested();
+    }
+
+    public bool HasBusinessSoftwareConfigured => BusinessSoftwareNames.Count > 0;
 
     private void AddCustomEncryptionExtension()
     {

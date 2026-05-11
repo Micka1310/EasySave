@@ -54,4 +54,13 @@
         <GradientStop Color="#BB9AF7" Offset="1" />
     </LinearGradientBrush>
 
+    <!-- Dégradé hero (look web app) -->
+    <LinearGradientBrush x:Key="HeroGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#2D3352" Offset="0" />
+        <GradientStop Color="#3A2F62" Offset="0.55" />
+        <GradientStop Color="#234A66" Offset="1" />
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="HeroOverlayBrush" Color="#33FFFFFF" />
+
 </ResourceDictionary>
