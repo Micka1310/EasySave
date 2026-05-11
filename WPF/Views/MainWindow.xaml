@@ -525,6 +525,76 @@
 
                         <Border Style="{StaticResource Card}" Margin="0,0,0,16" Padding="24">
                             <StackPanel>
+                                <TextBlock Text="{Binding LblSettingsSectionBusinessSoftware}"
+                                           FontSize="12" FontWeight="Bold"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Margin="0,0,0,4" />
+                                <TextBlock Text="{Binding LblSettingsBusinessSoftwareLabel}"
+                                           FontSize="15" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Margin="0,8,0,0" />
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             MinWidth="260"
+                                             Margin="0,0,8,0"
+                                             Padding="10,8"
+                                             Text="{Binding CustomBusinessSoftwareInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button Grid.Column="1"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Command="{Binding AddBusinessSoftwareCommand}"
+                                            Content="{Binding LblSettingsBusinessSoftwareAddButton}" />
+                                </Grid>
+                                <TextBlock Text="{Binding LblSettingsBusinessSoftwareList}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,10,0,4" />
+                                <ItemsControl Margin="0,2,0,8"
+                                              ItemsSource="{Binding BusinessSoftwareNames}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{StaticResource SurfaceElevatedBrush}"
+                                                    BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="999"
+                                                    Padding="10,6"
+                                                    Margin="0,0,8,8">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding}"
+                                                               FontFamily="Consolas"
+                                                               FontSize="12"
+                                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                                               VerticalAlignment="Center" />
+                                                    <Button Margin="8,0,0,0"
+                                                            Width="24"
+                                                            Height="24"
+                                                            Padding="0"
+                                                            Style="{StaticResource SecondaryButton}"
+                                                            Command="{Binding DataContext.RemoveBusinessSoftwareCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="×" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding LblSettingsBusinessSoftwareHint}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,12,0,0" FontSize="13"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,16" Padding="24">
+                            <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionEncryption}"
                                            FontSize="12" FontWeight="Bold"
                                            Foreground="{StaticResource AccentBrush}"

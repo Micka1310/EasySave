@@ -25,6 +25,7 @@ public class MainViewModel : ViewModelBase
     private readonly WorkList _workList;
     private readonly Language _lang;
     private readonly BackupService _backupService = new BackupService();
+    private readonly Logger _logger = new Logger();
     private readonly GeneralSettingsService _generalSettingsService = new GeneralSettingsService();
     private readonly XmlSerializer _logDocumentSerializer = new(typeof(LogDocument));
     private GeneralSettings _settings = new();
@@ -32,6 +33,7 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<WorkItemViewModel> Works { get; } = [];
     public ObservableCollection<WorkItemViewModel> PagedWorks { get; } = [];
     public ObservableCollection<ExtensionOptionViewModel> EncryptionExtensionOptions { get; } = [];
+    public ObservableCollection<string> BusinessSoftwareNames { get; } = [];
 
     public IReadOnlyList<int> PageSizeChoices { get; } = [5, 10, 20, 50];
 
@@ -147,6 +149,15 @@ public class MainViewModel : ViewModelBase
             .Select(x => x.Extension)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
 
+    private string _customBusinessSoftwareInput = "";
+    public string CustomBusinessSoftwareInput
+    {
+        get => _customBusinessSoftwareInput;
+        set => SetField(ref _customBusinessSoftwareInput, value);
+    }
+
+    public string MonitoredBusinessSoftwareDisplay => string.Join("; ", BusinessSoftwareNames);
+
     private bool _isRunning;
     public bool IsRunning
     {
@@ -200,6 +211,8 @@ public class MainViewModel : ViewModelBase
     public ICommand PrevPageCommand { get; }
     public ICommand NextPageCommand { get; }
     public ICommand AddCustomEncryptionExtensionCommand { get; }
+    public ICommand AddBusinessSoftwareCommand { get; }
+    public ICommand RemoveBusinessSoftwareCommand { get; }
     public ICommand RefreshLogsCommand { get; }
     public ICommand OpenLogsFolderCommand { get; }
 
@@ -214,6 +227,7 @@ public class MainViewModel : ViewModelBase
         _isFrench = _lang.GetCurrentLanguage() == Lang.FR;
         _settings = _generalSettingsService.Load();
 
+        InitializeBusinessSoftware();
         _isLogFormatJson = !string.Equals(_settings.LogFormat, "xml", StringComparison.OrdinalIgnoreCase);
         LogFormatSettings.Current = _isLogFormatJson ? LogFormat.Json : LogFormat.Xml;
 
@@ -234,6 +248,8 @@ public class MainViewModel : ViewModelBase
         PrevPageCommand = new RelayCommand(_ => CurrentPage -= 1, _ => CurrentPage > 1);
         NextPageCommand = new RelayCommand(_ => CurrentPage += 1, _ => CurrentPage < TotalPages);
         AddCustomEncryptionExtensionCommand = new RelayCommand(_ => AddCustomEncryptionExtension(), _ => true);
+        AddBusinessSoftwareCommand = new RelayCommand(_ => AddBusinessSoftware(), _ => true);
+        RemoveBusinessSoftwareCommand = new RelayCommand(p => RemoveBusinessSoftware(p as string), _ => true);
         RefreshLogsCommand = new RelayCommand(_ => RefreshLogPreview(), _ => true);
         OpenLogsFolderCommand = new RelayCommand(_ => OpenLogsFolder(), _ => true);
 
@@ -331,6 +347,11 @@ public class MainViewModel : ViewModelBase
     public string LblSettingsLogsPreview => _lang.GetString("wpf_settings_logs_preview");
     public string LblSettingsLogsRefresh => _lang.GetString("wpf_settings_logs_refresh");
     public string LblSettingsOpenLogsFolder => _lang.GetString("wpf_settings_open_logs_folder");
+    public string LblSettingsSectionBusinessSoftware => _lang.GetString("wpf_settings_section_business_software");
+    public string LblSettingsBusinessSoftwareLabel => _lang.GetString("wpf_settings_business_software_label");
+    public string LblSettingsBusinessSoftwareHint => _lang.GetString("wpf_settings_business_software_hint");
+    public string LblSettingsBusinessSoftwareAddButton => _lang.GetString("wpf_settings_business_software_add_button");
+    public string LblSettingsBusinessSoftwareList => _lang.GetString("wpf_settings_business_software_list");
     public string LblSettingsSectionEncryption => _lang.GetString("wpf_settings_section_encryption");
     public string LblSettingsEncryptionExtensions => _lang.GetString("wpf_settings_encryption_extensions");
     public string LblSettingsEncryptionSelected => _lang.GetString("wpf_settings_encryption_selected");
@@ -393,6 +414,11 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(LblSettingsLogsPreview));
         OnPropertyChanged(nameof(LblSettingsLogsRefresh));
         OnPropertyChanged(nameof(LblSettingsOpenLogsFolder));
+        OnPropertyChanged(nameof(LblSettingsSectionBusinessSoftware));
+        OnPropertyChanged(nameof(LblSettingsBusinessSoftwareLabel));
+        OnPropertyChanged(nameof(LblSettingsBusinessSoftwareHint));
+        OnPropertyChanged(nameof(LblSettingsBusinessSoftwareAddButton));
+        OnPropertyChanged(nameof(LblSettingsBusinessSoftwareList));
         OnPropertyChanged(nameof(LblSettingsSectionEncryption));
         OnPropertyChanged(nameof(LblSettingsEncryptionExtensions));
         OnPropertyChanged(nameof(LblSettingsEncryptionSelected));
@@ -447,6 +473,14 @@ public class MainViewModel : ViewModelBase
     private async Task RunWorksAsync(List<WorkItemViewModel> targets)
     {
         if (targets.Count == 0 || IsRunning) return;
+        if (TryGetRunningBusinessSoftware(out string startupBlockingProcess))
+        {
+            string blockedText = $"{_lang.GetString("wpf_business_software_blocked_start")} ({startupBlockingProcess})";
+            ShowBanner(blockedText, "warning");
+            LogBusinessSoftwareEvent(startupBlockingProcess, blockedText);
+            return;
+        }
+
         IsRunning = true;
         StatusBanner = "";
         List<string> errors = [];
@@ -466,13 +500,24 @@ public class MainViewModel : ViewModelBase
                     });
                 });
 
+                using CancellationTokenSource monitorCts = new();
+                bool pauseRequestedByBusinessSoftware = false;
+                Task monitorTask = MonitorBusinessSoftwareAsync(
+                    vm,
+                    () => pauseRequestedByBusinessSoftware,
+                    v => pauseRequestedByBusinessSoftware = v,
+                    monitorCts.Token);
+
                 List<string> jobErrors = [];
                 bool ok = await Task.Run(() => _backupService.ExecuteWork(
                     vm.Work,
                     reporter,
                     jobErrors,
                     CancellationToken.None,
-                    () => false));
+                    () => pauseRequestedByBusinessSoftware));
+
+                monitorCts.Cancel();
+                await monitorTask;
 
                 vm.StatusKey = ok ? "Done" : "Error";
 
@@ -495,6 +540,61 @@ public class MainViewModel : ViewModelBase
                 ? $"Sauvegarde terminée avec {errors.Count} erreur(s)."
                 : $"Backup finished with {errors.Count} error(s).";
             ShowBanner(head + "\n" + string.Join("\n", errors), "error");
+        }
+    }
+
+    private async Task MonitorBusinessSoftwareAsync(
+        WorkItemViewModel vm,
+        Func<bool> getPauseRequested,
+        Action<bool> setPauseRequested,
+        CancellationToken token)
+    {
+        bool loggedCurrentDetection = false;
+
+        while (!token.IsCancellationRequested)
+        {
+            if (TryGetRunningBusinessSoftware(out string processName))
+            {
+                if (!getPauseRequested())
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        setPauseRequested(true);
+                        vm.StatusKey = "Paused";
+                        string text = $"{_lang.GetString("wpf_business_software_pause")} ({processName})";
+                        ShowBanner(text, "warning");
+                    });
+                }
+
+                if (!loggedCurrentDetection)
+                {
+                    LogBusinessSoftwareEvent(processName, _lang.GetString("wpf_business_software_log"));
+                    loggedCurrentDetection = true;
+                }
+            }
+            else
+            {
+                if (getPauseRequested())
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        setPauseRequested(false);
+                        vm.StatusKey = "Active";
+                        ShowBanner(_lang.GetString("wpf_business_software_resume"), "info");
+                    });
+                }
+
+                loggedCurrentDetection = false;
+            }
+
+            try
+            {
+                await Task.Delay(400, token);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
         }
     }
 
@@ -527,6 +627,82 @@ public class MainViewModel : ViewModelBase
         }
 
         SaveEncryptionExtensionsFromOptions();
+    }
+
+    private void InitializeBusinessSoftware()
+    {
+        List<string> configured = _settings.BusinessSoftwareNames
+            .Select(NormalizeProcessName)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (configured.Count == 0)
+        {
+            configured = ["notepad", "calc"];
+        }
+
+        BusinessSoftwareNames.Clear();
+        foreach (string name in configured.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+        {
+            BusinessSoftwareNames.Add(name);
+        }
+
+        _settings.BusinessSoftwareNames = BusinessSoftwareNames.ToList();
+        _generalSettingsService.Save(_settings);
+        OnPropertyChanged(nameof(MonitoredBusinessSoftwareDisplay));
+    }
+
+    private void AddBusinessSoftware()
+    {
+        string normalized = NormalizeProcessName(CustomBusinessSoftwareInput);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return;
+        }
+
+        if (!BusinessSoftwareNames.Any(x => string.Equals(x, normalized, StringComparison.OrdinalIgnoreCase)))
+        {
+            BusinessSoftwareNames.Add(normalized);
+        }
+
+        List<string> ordered = BusinessSoftwareNames
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        BusinessSoftwareNames.Clear();
+        foreach (string name in ordered)
+        {
+            BusinessSoftwareNames.Add(name);
+        }
+
+        CustomBusinessSoftwareInput = "";
+        _settings.BusinessSoftwareNames = BusinessSoftwareNames.ToList();
+        _generalSettingsService.Save(_settings);
+        OnPropertyChanged(nameof(MonitoredBusinessSoftwareDisplay));
+    }
+
+    private void RemoveBusinessSoftware(string? processName)
+    {
+        if (string.IsNullOrWhiteSpace(processName))
+        {
+            return;
+        }
+
+        string normalized = NormalizeProcessName(processName);
+        string? existing = BusinessSoftwareNames
+            .FirstOrDefault(x => string.Equals(x, normalized, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is null)
+        {
+            return;
+        }
+
+        BusinessSoftwareNames.Remove(existing);
+        _settings.BusinessSoftwareNames = BusinessSoftwareNames.ToList();
+        _generalSettingsService.Save(_settings);
+        OnPropertyChanged(nameof(MonitoredBusinessSoftwareDisplay));
     }
 
     private void AddCustomEncryptionExtension()
@@ -577,13 +753,77 @@ public class MainViewModel : ViewModelBase
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        _generalSettingsService.Save(new GeneralSettings
-        {
-            EncryptedExtensions = selected,
-            LogFormat = _settings.LogFormat
-        });
-
         _settings.EncryptedExtensions = selected;
+        _settings.BusinessSoftwareNames = BusinessSoftwareNames.ToList();
+        _generalSettingsService.Save(_settings);
+    }
+
+    private bool TryGetRunningBusinessSoftware(out string processName)
+    {
+        processName = "";
+        if (BusinessSoftwareNames.Count == 0)
+        {
+            return false;
+        }
+
+        HashSet<string> monitored = BuildExpandedProcessNames(BusinessSoftwareNames);
+
+        foreach (Process process in Process.GetProcesses())
+        {
+            try
+            {
+                if (monitored.Contains(process.ProcessName))
+                {
+                    processName = process.ProcessName;
+                    return true;
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
+
+        return false;
+    }
+
+    private static HashSet<string> BuildExpandedProcessNames(IEnumerable<string> names)
+    {
+        HashSet<string> expanded = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string raw in names.Where(x => !string.IsNullOrWhiteSpace(x)))
+        {
+            string name = raw.Trim();
+            expanded.Add(name);
+
+            if (string.Equals(name, "calc", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(name, "calculatrice", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(name, "calculator", StringComparison.OrdinalIgnoreCase))
+            {
+                expanded.Add("calc");
+                expanded.Add("CalculatorApp");
+                expanded.Add("calculator");
+                expanded.Add("Win32Calc");
+            }
+        }
+
+        return expanded;
+    }
+
+    private void LogBusinessSoftwareEvent(string processName, string message)
+    {
+        _logger.WriteLogs(
+            "BusinessSoftwareGuard",
+            processName,
+            "",
+            0,
+            0,
+            0,
+            success: false,
+            errorMessage: message);
     }
 
     private static string NormalizeExtension(string value)
@@ -595,6 +835,22 @@ public class MainViewModel : ViewModelBase
         }
 
         return v.StartsWith('.') ? v : "." + v;
+    }
+
+    private static string NormalizeProcessName(string value)
+    {
+        string v = value.Trim();
+        if (string.IsNullOrWhiteSpace(v))
+        {
+            return string.Empty;
+        }
+
+        if (v.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        {
+            v = v[..^4];
+        }
+
+        return v.ToLowerInvariant();
     }
 
     private void ApplyLogFormatPreference()
