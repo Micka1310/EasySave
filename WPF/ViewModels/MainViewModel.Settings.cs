@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -54,6 +55,77 @@ public partial class MainViewModel
         set => SetField(ref _customPriorityExtensionInput, value);
     }
 
+    public ObservableCollection<ThresholdUnitOption> LargeFileThresholdUnits { get; } = new()
+    {
+        new ThresholdUnitOption("KB", "Ko", 1L),
+        new ThresholdUnitOption("MB", "Mo", 1024L),
+        new ThresholdUnitOption("GB", "Go", 1024L * 1024L),
+    };
+
+    private ThresholdUnitOption? _selectedLargeFileThresholdUnit;
+    public ThresholdUnitOption? SelectedLargeFileThresholdUnit
+    {
+        get => _selectedLargeFileThresholdUnit;
+        set
+        {
+            if (value is null) return;
+            if (!SetField(ref _selectedLargeFileThresholdUnit, value)) return;
+            _settings.LargeFileThresholdUnit = value.Code;
+            ApplyLargeFileThresholdInput();
+        }
+    }
+
+    private string _largeFileThresholdValueInput = "0";
+    public string LargeFileThresholdValueInput
+    {
+        get => _largeFileThresholdValueInput;
+        set
+        {
+            string sanitized = (value ?? "").Trim();
+            if (!SetField(ref _largeFileThresholdValueInput, sanitized)) return;
+            ApplyLargeFileThresholdInput();
+        }
+    }
+
+    public bool IsLargeFileThresholdEnabled => _settings.LargeFileThresholdKB > 0;
+
+    public string LargeFileThresholdSummary
+    {
+        get
+        {
+            if (_settings.LargeFileThresholdKB <= 0)
+            {
+                return IsFrench ? "Règle désactivée." : "Rule disabled.";
+            }
+
+            string pretty = FormatThresholdPretty(_settings.LargeFileThresholdKB);
+            return IsFrench
+                ? $"Pas de transfert simultané de fichiers > {pretty}"
+                : $"No parallel transfer of files > {pretty}";
+        }
+    }
+
+    public sealed class ThresholdUnitOption
+    {
+        public ThresholdUnitOption(string code, string label, long factorKB)
+        {
+            Code = code;
+            Label = label;
+            FactorKB = factorKB;
+        }
+
+        public string Code { get; }
+        public string Label { get; }
+        public long FactorKB { get; }
+    }
+
+    private static string FormatThresholdPretty(int kb)
+    {
+        if (kb >= 1024 * 1024 && kb % (1024 * 1024) == 0) return $"{kb / (1024 * 1024)} Go";
+        if (kb >= 1024 && kb % 1024 == 0) return $"{kb / 1024} Mo";
+        return $"{kb} Ko";
+    }
+
     public string SelectedEncryptionExtensionsDisplay => string.Join("; ",
         EncryptionExtensionOptions.Where(x => x.IsSelected).Select(x => x.Extension).OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
 
@@ -64,6 +136,99 @@ public partial class MainViewModel
     {
         _isLogFormatJson = !string.Equals(_settings.LogFormat, "xml", StringComparison.OrdinalIgnoreCase);
         LogFormatSettings.Current = _isLogFormatJson ? LogFormat.Json : LogFormat.Xml;
+    }
+
+    private bool _suppressLargeFileThresholdApply;
+
+    private void InitializeLargeFileThresholdFromSettings()
+    {
+        int kb = Math.Max(0, _settings.LargeFileThresholdKB);
+        _settings.LargeFileThresholdKB = kb;
+
+        ThresholdUnitOption unit = LargeFileThresholdUnits.FirstOrDefault(u =>
+            string.Equals(u.Code, _settings.LargeFileThresholdUnit, StringComparison.OrdinalIgnoreCase))
+            ?? PickBestUnit(kb);
+
+        _selectedLargeFileThresholdUnit = unit;
+        _settings.LargeFileThresholdUnit = unit.Code;
+
+        _suppressLargeFileThresholdApply = true;
+        try
+        {
+            _largeFileThresholdValueInput = ConvertKBToUnitDisplay(kb, unit);
+        }
+        finally
+        {
+            _suppressLargeFileThresholdApply = false;
+        }
+
+        OnPropertyChanged(nameof(SelectedLargeFileThresholdUnit));
+        OnPropertyChanged(nameof(LargeFileThresholdValueInput));
+        OnPropertyChanged(nameof(IsLargeFileThresholdEnabled));
+        OnPropertyChanged(nameof(LargeFileThresholdSummary));
+    }
+
+    private void ApplyLargeFileThresholdInput()
+    {
+        if (_suppressLargeFileThresholdApply) return;
+
+        long valueInUnit = 0;
+        if (!string.IsNullOrWhiteSpace(_largeFileThresholdValueInput))
+        {
+            if (!long.TryParse(_largeFileThresholdValueInput, System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture, out valueInUnit) || valueInUnit < 0)
+            {
+                valueInUnit = 0;
+            }
+        }
+
+        long factor = _selectedLargeFileThresholdUnit?.FactorKB ?? 1L;
+        long totalKB = valueInUnit * factor;
+        if (totalKB > int.MaxValue) totalKB = int.MaxValue;
+
+        int kb = (int)totalKB;
+        bool changed = _settings.LargeFileThresholdKB != kb
+                       || !string.Equals(_settings.LargeFileThresholdUnit, _selectedLargeFileThresholdUnit?.Code, StringComparison.OrdinalIgnoreCase);
+
+        _settings.LargeFileThresholdKB = kb;
+        if (_selectedLargeFileThresholdUnit is not null)
+            _settings.LargeFileThresholdUnit = _selectedLargeFileThresholdUnit.Code;
+
+        if (changed)
+        {
+            _generalSettingsService.Save(_settings);
+        }
+
+        OnPropertyChanged(nameof(IsLargeFileThresholdEnabled));
+        OnPropertyChanged(nameof(LargeFileThresholdSummary));
+    }
+
+    public void IncreaseLargeFileThreshold() => StepLargeFileThreshold(+1);
+    public void DecreaseLargeFileThreshold() => StepLargeFileThreshold(-1);
+
+    private void StepLargeFileThreshold(int delta)
+    {
+        long current = 0;
+        long.TryParse(_largeFileThresholdValueInput, System.Globalization.NumberStyles.Integer,
+            System.Globalization.CultureInfo.InvariantCulture, out current);
+        long next = Math.Max(0, current + delta);
+        LargeFileThresholdValueInput = next.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static ThresholdUnitOption PickBestUnit(int kb)
+    {
+        if (kb >= 1024 * 1024 && kb % (1024 * 1024) == 0)
+            return new ThresholdUnitOption("GB", "Go", 1024L * 1024L);
+        if (kb >= 1024 && kb % 1024 == 0)
+            return new ThresholdUnitOption("MB", "Mo", 1024L);
+        return new ThresholdUnitOption("KB", "Ko", 1L);
+    }
+
+    private static string ConvertKBToUnitDisplay(int kb, ThresholdUnitOption unit)
+    {
+        if (unit is null || unit.FactorKB <= 0) return "0";
+        long value = kb / unit.FactorKB;
+        return value.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private void InitializeEncryptionExtensions()

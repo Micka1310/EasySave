@@ -712,6 +712,101 @@
 
                         <Border Style="{StaticResource Card}" Margin="0,0,0,16" Padding="24">
                             <StackPanel>
+                                <TextBlock Text="{Binding LblSettingsSectionBandwidth}"
+                                           FontSize="12" FontWeight="Bold"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Margin="0,0,0,4" />
+                                <TextBlock Text="{Binding LblSettingsBandwidthThreshold}"
+                                           FontSize="15" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Margin="0,8,0,12" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Stepper moderne (− valeur +) -->
+                                    <Border Grid.Column="0"
+                                            Background="{StaticResource SurfaceElevatedBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                            CornerRadius="10"
+                                            Height="44">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40" />
+                                                <ColumnDefinition Width="140" />
+                                                <ColumnDefinition Width="40" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Button Grid.Column="0"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    Command="{Binding DecreaseLargeFileThresholdCommand}"
+                                                    Padding="0" Margin="3"
+                                                    FontSize="18" FontWeight="Bold"
+                                                    Content="−" />
+
+                                            <TextBox Grid.Column="1"
+                                                     Style="{StaticResource ModernTextBox}"
+                                                     BorderThickness="0"
+                                                     Background="Transparent"
+                                                     FontSize="18" FontWeight="SemiBold"
+                                                     HorizontalContentAlignment="Center"
+                                                     VerticalContentAlignment="Center"
+                                                     Text="{Binding LargeFileThresholdValueInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                                            <Button Grid.Column="2"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    Command="{Binding IncreaseLargeFileThresholdCommand}"
+                                                    Padding="0" Margin="3"
+                                                    FontSize="18" FontWeight="Bold"
+                                                    Content="+" />
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- ComboBox unité (Ko / Mo / Go) -->
+                                    <ComboBox Grid.Column="1"
+                                              Margin="12,0,0,0"
+                                              Width="120" Height="44"
+                                              Style="{StaticResource ModernComboBox}"
+                                              ItemsSource="{Binding LargeFileThresholdUnits}"
+                                              DisplayMemberPath="Label"
+                                              SelectedItem="{Binding SelectedLargeFileThresholdUnit, Mode=TwoWay}"
+                                              VerticalAlignment="Center" />
+
+                                    <!-- Résumé visuel -->
+                                    <Border Grid.Column="2"
+                                            Margin="16,0,0,0"
+                                            Background="{StaticResource SurfaceElevatedBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                            CornerRadius="10" Padding="14,10"
+                                            VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="◉"
+                                                       Foreground="{StaticResource AccentBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,10,0"
+                                                       FontSize="14" />
+                                            <TextBlock Text="{Binding LargeFileThresholdSummary}"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="13"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock Text="{Binding LblSettingsBandwidthHint}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,16,0,0" FontSize="13"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,16" Padding="24">
+                            <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionEncryption}"
                                            FontSize="12" FontWeight="Bold"
                                            Foreground="{StaticResource AccentBrush}"

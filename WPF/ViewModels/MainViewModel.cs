@@ -141,6 +141,8 @@ public partial class MainViewModel : ViewModelBase
     public ICommand ClearBusinessSoftwareCommand { get; }
     public ICommand RefreshLogsCommand { get; }
     public ICommand OpenLogsFolderCommand { get; }
+    public ICommand IncreaseLargeFileThresholdCommand { get; }
+    public ICommand DecreaseLargeFileThresholdCommand { get; }
 
     public Action<CreateWorkViewModel>? RequestShowCreateDialog { get; set; }
 
@@ -157,6 +159,7 @@ public partial class MainViewModel : ViewModelBase
         InitializeLogFormatFromSettings();
         InitializeEncryptionExtensions();
         InitializePriorityExtensions();
+        InitializeLargeFileThresholdFromSettings();
 
         foreach (Work w in _workList.GetWork())
             Works.Add(new WorkItemViewModel(w));
@@ -178,6 +181,8 @@ public partial class MainViewModel : ViewModelBase
         ClearBusinessSoftwareCommand = new RelayCommand(_ => ClearBusinessSoftware(), _ => BusinessSoftwareNames.Count > 0);
         RefreshLogsCommand = new RelayCommand(_ => RefreshLogPreview(), _ => true);
         OpenLogsFolderCommand = new RelayCommand(_ => OpenLogsFolder(), _ => true);
+        IncreaseLargeFileThresholdCommand = new RelayCommand(_ => IncreaseLargeFileThreshold(), _ => true);
+        DecreaseLargeFileThresholdCommand = new RelayCommand(_ => DecreaseLargeFileThreshold(), _ => true);
 
         RefreshLogPreview();
     }

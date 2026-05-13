@@ -22,6 +22,11 @@ public class BackupService
     private readonly ManualResetEventSlim _priorityPhaseCompleted = new(true);
     private int _remainingPriorityWorkers;
 
+    // Sérialise les transferts de fichiers dont la taille dépasse le seuil
+    // configuré (LargeFileThresholdKB). Partagé entre tous les travaux exécutés
+    // en parallèle via cette même instance de BackupService.
+    private readonly SemaphoreSlim _largeFileGate = new(1, 1);
+
     public void ConfigureParallelRun(int workCount)
     {
         if (workCount <= 1)
@@ -117,6 +122,7 @@ public class BackupService
     {
         HashSet<string> encryptedExtensions = LoadEncryptedExtensions();
         HashSet<string> priorityExtensions = LoadPriorityExtensions();
+        long largeFileThresholdBytes = LoadLargeFileThresholdBytes();
         string[] priorityFiles = files.Where(f => IsPriorityFile(f, priorityExtensions)).ToArray();
         string[] nonPriorityFiles = files.Where(f => !IsPriorityFile(f, priorityExtensions)).ToArray();
         int totalFiles = files.Length;
@@ -175,10 +181,12 @@ public class BackupService
 
                 try
                 {
-                    var watch = System.Diagnostics.Stopwatch.StartNew();
-                    File.Copy(sourceFile, destinationFile, true);
-                    watch.Stop();
-                    transferTime = watch.ElapsedMilliseconds;
+                    transferTime = CopyFileRespectingBandwidthLimit(
+                        sourceFile, destinationFile, fileSize, largeFileThresholdBytes, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -283,10 +291,12 @@ public class BackupService
 
                 try
                 {
-                    var watch = Stopwatch.StartNew();
-                    File.Copy(sourceFile, destinationFile, true);
-                    watch.Stop();
-                    transferTime = watch.ElapsedMilliseconds;
+                    transferTime = CopyFileRespectingBandwidthLimit(
+                        sourceFile, destinationFile, fileSize, largeFileThresholdBytes, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -408,6 +418,48 @@ public class BackupService
             .Select(NormalizeExtension)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private long LoadLargeFileThresholdBytes()
+    {
+        GeneralSettings settings = _settingsService.Load();
+        int kb = settings.LargeFileThresholdKB;
+        return kb > 0 ? (long)kb * 1024L : 0L;
+    }
+
+    private long CopyFileRespectingBandwidthLimit(
+        string sourceFile,
+        string destinationFile,
+        long fileSize,
+        long largeFileThresholdBytes,
+        CancellationToken cancellationToken)
+    {
+        // Règle bande passante : interdiction de transférer en parallèle
+        // plusieurs fichiers dont la taille dépasse le seuil. Les fichiers
+        // plus petits ne sont pas concernés et continuent en parallèle.
+        bool isLarge = largeFileThresholdBytes > 0 && fileSize > largeFileThresholdBytes;
+        bool gateTaken = false;
+
+        if (isLarge)
+        {
+            _largeFileGate.Wait(cancellationToken);
+            gateTaken = true;
+        }
+
+        try
+        {
+            Stopwatch watch = Stopwatch.StartNew();
+            File.Copy(sourceFile, destinationFile, true);
+            watch.Stop();
+            return watch.ElapsedMilliseconds;
+        }
+        finally
+        {
+            if (gateTaken)
+            {
+                _largeFileGate.Release();
+            }
+        }
     }
 
     private static bool IsPriorityFile(string sourceFile, HashSet<string> priorityExtensions)

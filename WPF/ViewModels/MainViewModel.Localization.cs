@@ -82,6 +82,11 @@ public partial class MainViewModel
     public string LblSettingsPriorityAdd => _lang.GetString("wpf_settings_priority_add");
     public string LblSettingsPriorityAddButton => _lang.GetString("wpf_settings_priority_add_button");
     public string LblSettingsPriorityHint => _lang.GetString("wpf_settings_priority_hint");
+    public string LblSettingsSectionBandwidth => _lang.GetString("wpf_settings_section_bandwidth");
+    public string LblSettingsBandwidthThreshold => _lang.GetString("wpf_settings_bandwidth_threshold");
+    public string LblSettingsBandwidthThresholdUnit => _lang.GetString("wpf_settings_bandwidth_threshold_unit");
+    public string LblSettingsBandwidthHint => _lang.GetString("wpf_settings_bandwidth_hint");
+    public string LblSettingsBandwidthDisabled => _lang.GetString("wpf_settings_bandwidth_disabled");
     public string LblSettingsSectionEncryption => _lang.GetString("wpf_settings_section_encryption");
     public string LblSettingsEncryptionExtensions => _lang.GetString("wpf_settings_encryption_extensions");
     public string LblSettingsEncryptionSelected => _lang.GetString("wpf_settings_encryption_selected");
@@ -114,6 +119,8 @@ public partial class MainViewModel
             nameof(LblSettingsBusinessSoftwareResetDefaults), nameof(LblSettingsBusinessSoftwareClearAll), nameof(LblSettingsBusinessSoftwareEmpty),
             nameof(LblSettingsSectionPriority), nameof(LblSettingsPriorityExtensions), nameof(LblSettingsPrioritySelected),
             nameof(LblSettingsPriorityAdd), nameof(LblSettingsPriorityAddButton), nameof(LblSettingsPriorityHint),
+            nameof(LblSettingsSectionBandwidth), nameof(LblSettingsBandwidthThreshold), nameof(LblSettingsBandwidthThresholdUnit),
+            nameof(LblSettingsBandwidthHint), nameof(LblSettingsBandwidthDisabled), nameof(LargeFileThresholdSummary),
             nameof(LblSettingsSectionEncryption), nameof(LblSettingsEncryptionExtensions), nameof(LblSettingsEncryptionSelected),
             nameof(LblSettingsEncryptionAdd), nameof(LblSettingsEncryptionAddButton), nameof(LblSettingsEncryptionHint),
             nameof(LblSettingsCryptoSoftFolder), nameof(LblSettingsSectionAbout), nameof(LblSettingsAboutBody),

@@ -43,4 +43,13 @@ public sealed class GeneralSettings
     public List<string> PriorityExtensions { get; set; } = [];
     public string LogFormat { get; set; } = "json";
     public List<string> BusinessSoftwareNames { get; set; } = [];
+
+    // Taille (en Ko) au-dessus de laquelle deux fichiers ne peuvent pas être
+    // transférés simultanément par des travaux parallèles. 0 = règle désactivée.
+    public int LargeFileThresholdKB { get; set; } = 0;
+
+    // Unité préférée pour l'affichage dans l'UI ("KB", "MB", "GB"). Le stockage
+    // canonique reste LargeFileThresholdKB ; cette unité n'est qu'un détail
+    // d'affichage pour ne pas perdre la préférence utilisateur.
+    public string LargeFileThresholdUnit { get; set; } = "KB";
 }
