@@ -18,6 +18,7 @@ public class BackupService
     private readonly Logger _logger = new Logger();
     private readonly StateFile _stateFile = new StateFile();
     private readonly GeneralSettingsService _settingsService = new GeneralSettingsService();
+    private readonly object _ioWriteLock = new();
 
     public bool ExecuteWork(
         Work work,
@@ -215,9 +216,15 @@ public class BackupService
                     CurrentDestinationFile = destinationFile
                 };
 
-                _stateFile.WriteProcess(state);
+                lock (_ioWriteLock)
+                {
+                    _stateFile.WriteProcess(state);
+                }
                 progress.Report(state);
-                _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, encryptionTime, fileSuccess, errorMsg);
+                lock (_ioWriteLock)
+                {
+                    _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, encryptionTime, fileSuccess, errorMsg);
+                }
             }
         }
         catch (OperationCanceledException)

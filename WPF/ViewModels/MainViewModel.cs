@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Collections.Concurrent;
 using System.Windows.Input;
 using Application = System.Windows.Application;
 using EasyLog;
@@ -257,7 +258,7 @@ public partial class MainViewModel : ViewModelBase
 
         IsRunning = true;
         StatusBanner = "";
-        List<string> errors = [];
+        ConcurrentBag<string> errors = [];
 
         try
         {
@@ -265,52 +266,66 @@ public partial class MainViewModel : ViewModelBase
             {
                 vm.Reset();
                 vm.StatusKey = "Active";
-
-                Progress<WorkState> reporter = new(state =>
-                {
-                    Application.Current.Dispatcher.Invoke(() => vm.UpdateFromState(state));
-                });
-
-                using CancellationTokenSource monitorCts = new();
-                bool pauseRequestedByBusinessSoftware = false;
-                Task monitorTask = MonitorBusinessSoftwareAsync(
-                    vm,
-                    () => pauseRequestedByBusinessSoftware,
-                    v => pauseRequestedByBusinessSoftware = v,
-                    monitorCts.Token);
-
-                List<string> jobErrors = [];
-                bool ok = await Task.Run(() => _backupService.ExecuteWork(
-                    vm.Work,
-                    reporter,
-                    jobErrors,
-                    CancellationToken.None,
-                    () => pauseRequestedByBusinessSoftware));
-
-                monitorCts.Cancel();
-                await monitorTask;
-
-                vm.StatusKey = ok ? "Done" : "Error";
-                foreach (string e in jobErrors)
-                    errors.Add($"[{vm.Name}] {e}");
             }
+
+            List<Task> jobs = targets.Select(vm => RunSingleWorkAsync(vm, errors)).ToList();
+            await Task.WhenAll(jobs);
         }
         finally
         {
             IsRunning = false;
         }
 
-        if (errors.Count == 0)
+        if (errors.IsEmpty)
         {
             ShowBanner(IsFrench ? "Sauvegarde terminée avec succès." : "Backup completed successfully.", "success");
         }
         else
         {
+            List<string> orderedErrors = errors.OrderBy(e => e, StringComparer.OrdinalIgnoreCase).ToList();
             string head = IsFrench
-                ? $"Sauvegarde terminée avec {errors.Count} erreur(s)."
-                : $"Backup finished with {errors.Count} error(s).";
-            ShowBanner(head + "\n" + string.Join("\n", errors), "error");
+                ? $"Sauvegarde terminée avec {orderedErrors.Count} erreur(s)."
+                : $"Backup finished with {orderedErrors.Count} error(s).";
+            ShowBanner(head + "\n" + string.Join("\n", orderedErrors), "error");
         }
+    }
+
+    private async Task RunSingleWorkAsync(WorkItemViewModel vm, ConcurrentBag<string> allErrors)
+    {
+        Progress<WorkState> reporter = new(state =>
+        {
+            Application.Current.Dispatcher.Invoke(() => vm.UpdateFromState(state));
+        });
+
+        using CancellationTokenSource monitorCts = new();
+        bool pauseRequestedByBusinessSoftware = false;
+        Task monitorTask = MonitorBusinessSoftwareAsync(
+            vm,
+            () => pauseRequestedByBusinessSoftware,
+            v => pauseRequestedByBusinessSoftware = v,
+            monitorCts.Token);
+
+        List<string> jobErrors = [];
+        bool ok;
+
+        try
+        {
+            ok = await Task.Run(() => _backupService.ExecuteWork(
+                vm.Work,
+                reporter,
+                jobErrors,
+                CancellationToken.None,
+                () => pauseRequestedByBusinessSoftware));
+        }
+        finally
+        {
+            monitorCts.Cancel();
+            await monitorTask;
+        }
+
+        vm.StatusKey = ok ? "Done" : "Error";
+        foreach (string e in jobErrors)
+            allErrors.Add($"[{vm.Name}] {e}");
     }
 
     private void ShowBanner(string text, string kind)
