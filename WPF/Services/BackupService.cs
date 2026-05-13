@@ -19,6 +19,21 @@ public class BackupService
     private readonly StateFile _stateFile = new StateFile();
     private readonly GeneralSettingsService _settingsService = new GeneralSettingsService();
     private readonly object _ioWriteLock = new();
+    private readonly ManualResetEventSlim _priorityPhaseCompleted = new(true);
+    private int _remainingPriorityWorkers;
+
+    public void ConfigureParallelRun(int workCount)
+    {
+        if (workCount <= 1)
+        {
+            Interlocked.Exchange(ref _remainingPriorityWorkers, 0);
+            _priorityPhaseCompleted.Set();
+            return;
+        }
+
+        Interlocked.Exchange(ref _remainingPriorityWorkers, workCount);
+        _priorityPhaseCompleted.Reset();
+    }
 
     public bool ExecuteWork(
         Work work,
@@ -101,11 +116,15 @@ public class BackupService
         Func<bool>? isPaused)
     {
         HashSet<string> encryptedExtensions = LoadEncryptedExtensions();
+        HashSet<string> priorityExtensions = LoadPriorityExtensions();
+        string[] priorityFiles = files.Where(f => IsPriorityFile(f, priorityExtensions)).ToArray();
+        string[] nonPriorityFiles = files.Where(f => !IsPriorityFile(f, priorityExtensions)).ToArray();
         int totalFiles = files.Length;
         int remainingFiles = totalFiles;
         long totalSize = files.Sum(f => new FileInfo(f).Length);
         long remainingSize = totalSize;
         bool success = true;
+        bool priorityPhaseSignaled = false;
 
         progress.Report(new WorkState
         {
@@ -123,7 +142,7 @@ public class BackupService
 
         try
         {
-            foreach (string sourceFile in files)
+            foreach (string sourceFile in priorityFiles)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 WaitWhilePaused(cancellationToken, isPaused);
@@ -226,13 +245,137 @@ public class BackupService
                     _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, encryptionTime, fileSuccess, errorMsg);
                 }
             }
+
+            CompletePriorityPhase();
+            priorityPhaseSignaled = true;
+            _priorityPhaseCompleted.Wait(cancellationToken);
+
+            foreach (string sourceFile in nonPriorityFiles)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                WaitWhilePaused(cancellationToken, isPaused);
+
+                int progressionBeforeFile = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
+                progress.Report(new WorkState
+                {
+                    WorkName = work.GetName(),
+                    Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    Status = "Active",
+                    TotalFiles = totalFiles,
+                    TotalSize = totalSize,
+                    RemainingFiles = remainingFiles,
+                    RemainingSize = remainingSize,
+                    Progression = progressionBeforeFile,
+                    CurrentSourceFile = "",
+                    CurrentDestinationFile = ""
+                });
+
+                string relativePath = Path.GetRelativePath(work.GetSourceDirectory(), sourceFile);
+                string destinationFile = Path.Combine(work.GetDestinationDirectory(), relativePath);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+
+                long fileSize = new FileInfo(sourceFile).Length;
+                long transferTime;
+                long encryptionTime = 0;
+                bool fileSuccess = true;
+                string errorMsg = "";
+
+                try
+                {
+                    var watch = Stopwatch.StartNew();
+                    File.Copy(sourceFile, destinationFile, true);
+                    watch.Stop();
+                    transferTime = watch.ElapsedMilliseconds;
+                }
+                catch (Exception ex)
+                {
+                    transferTime = -1;
+                    fileSuccess = false;
+                    errorMsg = ex.Message;
+                    errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
+                    success = false;
+                }
+
+                if (fileSuccess && ShouldEncrypt(sourceFile, encryptedExtensions))
+                {
+                    try
+                    {
+                        encryptionTime = EncryptWithCryptoSoft(destinationFile);
+                    }
+                    catch (CryptoSoftException ex)
+                    {
+                        encryptionTime = ex.ErrorCode;
+                        fileSuccess = false;
+                        errorMsg = string.IsNullOrWhiteSpace(errorMsg)
+                            ? $"Erreur chiffrement : {ex.Message}"
+                            : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
+                        errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
+                        success = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        encryptionTime = -1;
+                        fileSuccess = false;
+                        errorMsg = string.IsNullOrWhiteSpace(errorMsg)
+                            ? $"Erreur chiffrement : {ex.Message}"
+                            : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
+                        errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
+                        success = false;
+                    }
+                }
+
+                remainingFiles--;
+                remainingSize -= fileSize;
+                int progression = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
+
+                WorkState state = new WorkState
+                {
+                    WorkName = work.GetName(),
+                    Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    Status = remainingFiles > 0 ? "Active" : "Inactive",
+                    TotalFiles = totalFiles,
+                    TotalSize = totalSize,
+                    RemainingFiles = remainingFiles,
+                    RemainingSize = remainingSize,
+                    Progression = progression,
+                    CurrentSourceFile = sourceFile,
+                    CurrentDestinationFile = destinationFile
+                };
+
+                lock (_ioWriteLock)
+                {
+                    _stateFile.WriteProcess(state);
+                }
+                progress.Report(state);
+                lock (_ioWriteLock)
+                {
+                    _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, encryptionTime, fileSuccess, errorMsg);
+                }
+            }
         }
         catch (OperationCanceledException)
         {
             return false;
         }
+        finally
+        {
+            if (!priorityPhaseSignaled)
+            {
+                CompletePriorityPhase();
+            }
+        }
 
         return success;
+    }
+
+    private void CompletePriorityPhase()
+    {
+        int remaining = Interlocked.Decrement(ref _remainingPriorityWorkers);
+        if (remaining <= 0)
+        {
+            _priorityPhaseCompleted.Set();
+        }
     }
 
     private static bool ShouldCopyInDifferential(string sourceFile, string destinationFile)
@@ -256,6 +399,31 @@ public class BackupService
             .Select(NormalizeExtension)
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private HashSet<string> LoadPriorityExtensions()
+    {
+        GeneralSettings settings = _settingsService.Load();
+        return settings.PriorityExtensions
+            .Select(NormalizeExtension)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPriorityFile(string sourceFile, HashSet<string> priorityExtensions)
+    {
+        if (priorityExtensions.Count == 0)
+        {
+            return false;
+        }
+
+        string extension = Path.GetExtension(sourceFile);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return false;
+        }
+
+        return priorityExtensions.Contains(extension);
     }
 
     private static bool ShouldEncrypt(string sourceFile, HashSet<string> encryptedExtensions)

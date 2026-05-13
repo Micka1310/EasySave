@@ -26,6 +26,7 @@ public partial class MainViewModel : ViewModelBase
     public ObservableCollection<WorkItemViewModel> Works { get; } = [];
     public ObservableCollection<WorkItemViewModel> PagedWorks { get; } = [];
     public ObservableCollection<ExtensionOptionViewModel> EncryptionExtensionOptions { get; } = [];
+    public ObservableCollection<ExtensionOptionViewModel> PriorityExtensionOptions { get; } = [];
     public ObservableCollection<string> BusinessSoftwareNames { get; } = [];
 
     public IReadOnlyList<int> PageSizeChoices { get; } = [5, 10, 20, 50];
@@ -133,6 +134,7 @@ public partial class MainViewModel : ViewModelBase
     public ICommand PrevPageCommand { get; }
     public ICommand NextPageCommand { get; }
     public ICommand AddCustomEncryptionExtensionCommand { get; }
+    public ICommand AddCustomPriorityExtensionCommand { get; }
     public ICommand AddBusinessSoftwareCommand { get; }
     public ICommand RemoveBusinessSoftwareCommand { get; }
     public ICommand ResetBusinessSoftwareDefaultsCommand { get; }
@@ -154,6 +156,7 @@ public partial class MainViewModel : ViewModelBase
         InitializeBusinessSoftware();
         InitializeLogFormatFromSettings();
         InitializeEncryptionExtensions();
+        InitializePriorityExtensions();
 
         foreach (Work w in _workList.GetWork())
             Works.Add(new WorkItemViewModel(w));
@@ -168,6 +171,7 @@ public partial class MainViewModel : ViewModelBase
         PrevPageCommand = new RelayCommand(_ => CurrentPage -= 1, _ => CurrentPage > 1);
         NextPageCommand = new RelayCommand(_ => CurrentPage += 1, _ => CurrentPage < TotalPages);
         AddCustomEncryptionExtensionCommand = new RelayCommand(_ => AddCustomEncryptionExtension(), _ => true);
+        AddCustomPriorityExtensionCommand = new RelayCommand(_ => AddCustomPriorityExtension(), _ => true);
         AddBusinessSoftwareCommand = new RelayCommand(_ => AddBusinessSoftware(), _ => true);
         RemoveBusinessSoftwareCommand = new RelayCommand(p => RemoveBusinessSoftware(p as string), _ => true);
         ResetBusinessSoftwareDefaultsCommand = new RelayCommand(_ => ResetBusinessSoftwareDefaults(), _ => true);
@@ -268,6 +272,7 @@ public partial class MainViewModel : ViewModelBase
                 vm.StatusKey = "Active";
             }
 
+            _backupService.ConfigureParallelRun(targets.Count);
             List<Task> jobs = targets.Select(vm => RunSingleWorkAsync(vm, errors)).ToList();
             await Task.WhenAll(jobs);
         }

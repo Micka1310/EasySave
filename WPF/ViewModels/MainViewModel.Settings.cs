@@ -47,8 +47,18 @@ public partial class MainViewModel
         set => SetField(ref _customEncryptionExtensionInput, value);
     }
 
+    private string _customPriorityExtensionInput = "";
+    public string CustomPriorityExtensionInput
+    {
+        get => _customPriorityExtensionInput;
+        set => SetField(ref _customPriorityExtensionInput, value);
+    }
+
     public string SelectedEncryptionExtensionsDisplay => string.Join("; ",
         EncryptionExtensionOptions.Where(x => x.IsSelected).Select(x => x.Extension).OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+
+    public string SelectedPriorityExtensionsDisplay => string.Join("; ",
+        PriorityExtensionOptions.Where(x => x.IsSelected).Select(x => x.Extension).OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
 
     private void InitializeLogFormatFromSettings()
     {
@@ -109,6 +119,70 @@ public partial class MainViewModel
     private void SaveEncryptionExtensionsFromOptions()
     {
         _settings.EncryptedExtensions = EncryptionExtensionOptions
+            .Where(x => x.IsSelected)
+            .Select(x => NormalizeExtension(x.Extension))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        _settings.BusinessSoftwareNames = BusinessSoftwareNames.ToList();
+        _generalSettingsService.Save(_settings);
+    }
+
+    private void InitializePriorityExtensions()
+    {
+        string[] defaults = [".docx", ".pdf", ".xlsx", ".sql", ".json", ".xml", ".mdb"];
+        HashSet<string> selected = _settings.PriorityExtensions
+            .Select(NormalizeExtension)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        PriorityExtensionOptions.Clear();
+        foreach (string extension in defaults.Concat(selected).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+        {
+            var option = new ExtensionOptionViewModel(extension, selected.Contains(extension));
+            option.PropertyChanged += OnPriorityOptionPropertyChanged;
+            PriorityExtensionOptions.Add(option);
+        }
+
+        SavePriorityExtensionsFromOptions();
+    }
+
+    private void AddCustomPriorityExtension()
+    {
+        string normalized = NormalizeExtension(CustomPriorityExtensionInput);
+        if (string.IsNullOrWhiteSpace(normalized)) return;
+
+        ExtensionOptionViewModel? existing = PriorityExtensionOptions
+            .FirstOrDefault(x => string.Equals(x.Extension, normalized, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is null)
+        {
+            existing = new ExtensionOptionViewModel(normalized, true);
+            existing.PropertyChanged += OnPriorityOptionPropertyChanged;
+            PriorityExtensionOptions.Add(existing);
+        }
+        else
+        {
+            existing.IsSelected = true;
+        }
+
+        CustomPriorityExtensionInput = "";
+        SavePriorityExtensionsFromOptions();
+        OnPropertyChanged(nameof(SelectedPriorityExtensionsDisplay));
+    }
+
+    private void OnPriorityOptionPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ExtensionOptionViewModel.IsSelected)) return;
+        SavePriorityExtensionsFromOptions();
+        OnPropertyChanged(nameof(SelectedPriorityExtensionsDisplay));
+    }
+
+    private void SavePriorityExtensionsFromOptions()
+    {
+        _settings.PriorityExtensions = PriorityExtensionOptions
             .Where(x => x.IsSelected)
             .Select(x => NormalizeExtension(x.Extension))
             .Where(x => !string.IsNullOrWhiteSpace(x))

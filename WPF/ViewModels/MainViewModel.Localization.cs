@@ -76,6 +76,12 @@ public partial class MainViewModel
     public string LblSettingsBusinessSoftwareResetDefaults => _lang.GetString("wpf_settings_business_software_reset_defaults");
     public string LblSettingsBusinessSoftwareClearAll => _lang.GetString("wpf_settings_business_software_clear_all");
     public string LblSettingsBusinessSoftwareEmpty => _lang.GetString("wpf_settings_business_software_empty");
+    public string LblSettingsSectionPriority => _lang.GetString("wpf_settings_section_priority");
+    public string LblSettingsPriorityExtensions => _lang.GetString("wpf_settings_priority_extensions");
+    public string LblSettingsPrioritySelected => _lang.GetString("wpf_settings_priority_selected");
+    public string LblSettingsPriorityAdd => _lang.GetString("wpf_settings_priority_add");
+    public string LblSettingsPriorityAddButton => _lang.GetString("wpf_settings_priority_add_button");
+    public string LblSettingsPriorityHint => _lang.GetString("wpf_settings_priority_hint");
     public string LblSettingsSectionEncryption => _lang.GetString("wpf_settings_section_encryption");
     public string LblSettingsEncryptionExtensions => _lang.GetString("wpf_settings_encryption_extensions");
     public string LblSettingsEncryptionSelected => _lang.GetString("wpf_settings_encryption_selected");
@@ -106,6 +112,8 @@ public partial class MainViewModel
             nameof(LblSettingsOpenLogsFolder), nameof(LblSettingsSectionBusinessSoftware), nameof(LblSettingsBusinessSoftwareLabel),
             nameof(LblSettingsBusinessSoftwareHint), nameof(LblSettingsBusinessSoftwareAddButton), nameof(LblSettingsBusinessSoftwareList),
             nameof(LblSettingsBusinessSoftwareResetDefaults), nameof(LblSettingsBusinessSoftwareClearAll), nameof(LblSettingsBusinessSoftwareEmpty),
+            nameof(LblSettingsSectionPriority), nameof(LblSettingsPriorityExtensions), nameof(LblSettingsPrioritySelected),
+            nameof(LblSettingsPriorityAdd), nameof(LblSettingsPriorityAddButton), nameof(LblSettingsPriorityHint),
             nameof(LblSettingsSectionEncryption), nameof(LblSettingsEncryptionExtensions), nameof(LblSettingsEncryptionSelected),
             nameof(LblSettingsEncryptionAdd), nameof(LblSettingsEncryptionAddButton), nameof(LblSettingsEncryptionHint),
             nameof(LblSettingsCryptoSoftFolder), nameof(LblSettingsSectionAbout), nameof(LblSettingsAboutBody),
