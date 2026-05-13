@@ -41,7 +41,7 @@ public class WorkItemViewModel : ViewModelBase
 
     public string StatusDisplay => LocalizeStatus(_statusKey);
     public bool CanPause => _statusKey == "Active";
-    public bool CanResume => _statusKey == "Paused";
+    public bool CanResume => _statusKey == "Paused" && !_pausedByBusinessSoftware;
     public bool CanStop => _statusKey is "Active" or "Paused";
 
     private volatile bool _pauseRequested;
@@ -58,7 +58,12 @@ public class WorkItemViewModel : ViewModelBase
     public bool PausedByBusinessSoftware
     {
         get => _pausedByBusinessSoftware;
-        set => _pausedByBusinessSoftware = value;
+        set
+        {
+            _pausedByBusinessSoftware = value;
+            OnPropertyChanged(nameof(CanResume));
+            CommandManager.InvalidateRequerySuggested();
+        }
     }
 
     private CancellationTokenSource? _cts;
