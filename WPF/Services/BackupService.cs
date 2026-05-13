@@ -7,24 +7,22 @@ using WorkFile;
 
 namespace EasySave.WPF.Services;
 
-/// <summary>
-/// Service de sauvegarde réutilisé par le ViewModel : exécute Full ou Differential
-/// avec callback de progression et écrit dans EasyLog (logs journaliers + state.json).
-/// Reproduit la logique de Console.ViewModel.Strategy.ExecuteWork3 pour rester
-/// 100 % compatible avec la v1.
-/// </summary>
 public class BackupService
 {
     private readonly Logger _logger = new Logger();
     private readonly StateFile _stateFile = new StateFile();
     private readonly GeneralSettingsService _settingsService = new GeneralSettingsService();
     private readonly object _ioWriteLock = new();
+
+    // Barrière inter-travaux pour la phase prioritaire. Chaque travail
+    // décrémente le compteur quand il a terminé ses fichiers prioritaires.
+    // Quand le compteur atteint 0, la barrière s'ouvre et les fichiers
+    // non prioritaires peuvent commencer sur TOUS les travaux.
     private readonly ManualResetEventSlim _priorityPhaseCompleted = new(true);
     private int _remainingPriorityWorkers;
 
-    // Sérialise les transferts de fichiers dont la taille dépasse le seuil
-    // configuré (LargeFileThresholdKB). Partagé entre tous les travaux exécutés
-    // en parallèle via cette même instance de BackupService.
+    // Verrou bande passante : un seul gros fichier (taille > seuil) peut
+    // être transféré à la fois, tous travaux confondus.
     private readonly SemaphoreSlim _largeFileGate = new(1, 1);
 
     public void ConfigureParallelRun(int workCount)
@@ -112,6 +110,10 @@ public class BackupService
         }
     }
 
+    // ================================================================
+    // CopyFiles — Orchestration principale
+    // ================================================================
+
     private bool CopyFiles(
         Work work,
         string[] files,
@@ -123,246 +125,44 @@ public class BackupService
         HashSet<string> encryptedExtensions = LoadEncryptedExtensions();
         HashSet<string> priorityExtensions = LoadPriorityExtensions();
         long largeFileThresholdBytes = LoadLargeFileThresholdBytes();
+
         string[] priorityFiles = files.Where(f => IsPriorityFile(f, priorityExtensions)).ToArray();
         string[] nonPriorityFiles = files.Where(f => !IsPriorityFile(f, priorityExtensions)).ToArray();
+
         int totalFiles = files.Length;
         int remainingFiles = totalFiles;
-        long totalSize = files.Sum(f => new FileInfo(f).Length);
+        long totalSize = files.Sum(f => SafeFileSize(f));
         long remainingSize = totalSize;
         bool success = true;
         bool priorityPhaseSignaled = false;
 
-        progress.Report(new WorkState
-        {
-            WorkName = work.GetName(),
-            Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-            Status = totalFiles > 0 ? "Active" : "Inactive",
-            TotalFiles = totalFiles,
-            TotalSize = totalSize,
-            RemainingFiles = remainingFiles,
-            RemainingSize = remainingSize,
-            Progression = 0,
-            CurrentSourceFile = "",
-            CurrentDestinationFile = ""
-        });
+        progress.Report(MakeState(work, totalFiles, totalSize, remainingFiles, remainingSize, 0,
+            totalFiles > 0 ? "Active" : "Inactive", "", ""));
 
         try
         {
-            foreach (string sourceFile in priorityFiles)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                WaitWhilePaused(cancellationToken, isPaused);
+            // ── Phase 1 : fichiers prioritaires ──
+            // Traités en mode opportuniste (gros fichiers différés si le
+            // verrou bande passante est occupé, petits copiés en attendant).
+            success &= ProcessPhaseOpportunistic(
+                work, priorityFiles, encryptedExtensions, largeFileThresholdBytes,
+                totalFiles, totalSize, ref remainingFiles, ref remainingSize,
+                progress, errors, cancellationToken, isPaused);
 
-                int progressionBeforeFile = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
-                progress.Report(new WorkState
-                {
-                    WorkName = work.GetName(),
-                    Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Status = "Active",
-                    TotalFiles = totalFiles,
-                    TotalSize = totalSize,
-                    RemainingFiles = remainingFiles,
-                    RemainingSize = remainingSize,
-                    Progression = progressionBeforeFile,
-                    CurrentSourceFile = "",
-                    CurrentDestinationFile = ""
-                });
-
-                string relativePath = Path.GetRelativePath(work.GetSourceDirectory(), sourceFile);
-                string destinationFile = Path.Combine(work.GetDestinationDirectory(), relativePath);
-
-                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
-
-                long fileSize = new FileInfo(sourceFile).Length;
-                long transferTime;
-                long encryptionTime = 0;
-                bool fileSuccess = true;
-                string errorMsg = "";
-
-                try
-                {
-                    transferTime = CopyFileRespectingBandwidthLimit(
-                        sourceFile, destinationFile, fileSize, largeFileThresholdBytes, cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    transferTime = -1;
-                    fileSuccess = false;
-                    errorMsg = ex.Message;
-                    errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
-                    success = false;
-                }
-
-                if (fileSuccess && ShouldEncrypt(sourceFile, encryptedExtensions))
-                {
-                    try
-                    {
-                        encryptionTime = EncryptWithCryptoSoft(destinationFile);
-                    }
-                    catch (CryptoSoftException ex)
-                    {
-                        encryptionTime = ex.ErrorCode;
-                        fileSuccess = false;
-                        errorMsg = string.IsNullOrWhiteSpace(errorMsg)
-                            ? $"Erreur chiffrement : {ex.Message}"
-                            : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
-                        errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
-                        success = false;
-                    }
-                    catch (Exception ex)
-                    {
-                        encryptionTime = -1;
-                        fileSuccess = false;
-                        errorMsg = string.IsNullOrWhiteSpace(errorMsg)
-                            ? $"Erreur chiffrement : {ex.Message}"
-                            : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
-                        errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
-                        success = false;
-                    }
-                }
-
-                remainingFiles--;
-                remainingSize -= fileSize;
-                int progression = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
-
-                WorkState state = new WorkState
-                {
-                    WorkName = work.GetName(),
-                    Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Status = remainingFiles > 0 ? "Active" : "Inactive",
-                    TotalFiles = totalFiles,
-                    TotalSize = totalSize,
-                    RemainingFiles = remainingFiles,
-                    RemainingSize = remainingSize,
-                    Progression = progression,
-                    CurrentSourceFile = sourceFile,
-                    CurrentDestinationFile = destinationFile
-                };
-
-                lock (_ioWriteLock)
-                {
-                    _stateFile.WriteProcess(state);
-                }
-                progress.Report(state);
-                lock (_ioWriteLock)
-                {
-                    _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, encryptionTime, fileSuccess, errorMsg);
-                }
-            }
-
+            // Signale que CE travail a terminé ses fichiers prioritaires.
             CompletePriorityPhase();
             priorityPhaseSignaled = true;
+
+            // Attend que TOUS les travaux aient terminé leur phase prioritaire.
+            // Tant qu'il reste des fichiers prioritaires sur au moins un travail,
+            // aucun non-prioritaire ne peut être copié.
             _priorityPhaseCompleted.Wait(cancellationToken);
 
-            foreach (string sourceFile in nonPriorityFiles)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                WaitWhilePaused(cancellationToken, isPaused);
-
-                int progressionBeforeFile = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
-                progress.Report(new WorkState
-                {
-                    WorkName = work.GetName(),
-                    Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Status = "Active",
-                    TotalFiles = totalFiles,
-                    TotalSize = totalSize,
-                    RemainingFiles = remainingFiles,
-                    RemainingSize = remainingSize,
-                    Progression = progressionBeforeFile,
-                    CurrentSourceFile = "",
-                    CurrentDestinationFile = ""
-                });
-
-                string relativePath = Path.GetRelativePath(work.GetSourceDirectory(), sourceFile);
-                string destinationFile = Path.Combine(work.GetDestinationDirectory(), relativePath);
-
-                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
-
-                long fileSize = new FileInfo(sourceFile).Length;
-                long transferTime;
-                long encryptionTime = 0;
-                bool fileSuccess = true;
-                string errorMsg = "";
-
-                try
-                {
-                    transferTime = CopyFileRespectingBandwidthLimit(
-                        sourceFile, destinationFile, fileSize, largeFileThresholdBytes, cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    transferTime = -1;
-                    fileSuccess = false;
-                    errorMsg = ex.Message;
-                    errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
-                    success = false;
-                }
-
-                if (fileSuccess && ShouldEncrypt(sourceFile, encryptedExtensions))
-                {
-                    try
-                    {
-                        encryptionTime = EncryptWithCryptoSoft(destinationFile);
-                    }
-                    catch (CryptoSoftException ex)
-                    {
-                        encryptionTime = ex.ErrorCode;
-                        fileSuccess = false;
-                        errorMsg = string.IsNullOrWhiteSpace(errorMsg)
-                            ? $"Erreur chiffrement : {ex.Message}"
-                            : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
-                        errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
-                        success = false;
-                    }
-                    catch (Exception ex)
-                    {
-                        encryptionTime = -1;
-                        fileSuccess = false;
-                        errorMsg = string.IsNullOrWhiteSpace(errorMsg)
-                            ? $"Erreur chiffrement : {ex.Message}"
-                            : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
-                        errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
-                        success = false;
-                    }
-                }
-
-                remainingFiles--;
-                remainingSize -= fileSize;
-                int progression = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
-
-                WorkState state = new WorkState
-                {
-                    WorkName = work.GetName(),
-                    Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Status = remainingFiles > 0 ? "Active" : "Inactive",
-                    TotalFiles = totalFiles,
-                    TotalSize = totalSize,
-                    RemainingFiles = remainingFiles,
-                    RemainingSize = remainingSize,
-                    Progression = progression,
-                    CurrentSourceFile = sourceFile,
-                    CurrentDestinationFile = destinationFile
-                };
-
-                lock (_ioWriteLock)
-                {
-                    _stateFile.WriteProcess(state);
-                }
-                progress.Report(state);
-                lock (_ioWriteLock)
-                {
-                    _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize, transferTime, encryptionTime, fileSuccess, errorMsg);
-                }
-            }
+            // ── Phase 2 : fichiers non prioritaires ──
+            success &= ProcessPhaseOpportunistic(
+                work, nonPriorityFiles, encryptedExtensions, largeFileThresholdBytes,
+                totalFiles, totalSize, ref remainingFiles, ref remainingSize,
+                progress, errors, cancellationToken, isPaused);
         }
         catch (OperationCanceledException)
         {
@@ -379,6 +179,211 @@ public class BackupService
         return success;
     }
 
+    // ================================================================
+    // ProcessPhaseOpportunistic — Copie avec gestion bande passante
+    // ================================================================
+    //
+    // Parcourt les fichiers dans l'ordre d'origine.
+    //  • Petit fichier (≤ seuil) → copié immédiatement en parallèle.
+    //  • Gros fichier (> seuil) :
+    //      – Si le verrou bande passante est libre → copié maintenant.
+    //      – Sinon → différé et le travail continue avec les fichiers
+    //        suivants (petits) pour ne pas gaspiller le temps d'attente.
+    // En fin de passe, les gros fichiers différés sont traités en
+    // attendant le verrou normalement.
+
+    private bool ProcessPhaseOpportunistic(
+        Work work,
+        string[] files,
+        HashSet<string> encryptedExtensions,
+        long largeFileThresholdBytes,
+        int totalFiles,
+        long totalSize,
+        ref int remainingFiles,
+        ref long remainingSize,
+        IProgress<WorkState> progress,
+        List<string> errors,
+        CancellationToken cancellationToken,
+        Func<bool>? isPaused)
+    {
+        bool success = true;
+        List<string> deferredLargeFiles = new();
+
+        // ── Passe 1 : ordre d'origine, gros différés si verrou occupé ──
+        foreach (string sourceFile in files)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            WaitWhilePaused(cancellationToken, isPaused);
+
+            long fileSize = SafeFileSize(sourceFile);
+            bool isLarge = largeFileThresholdBytes > 0 && fileSize > largeFileThresholdBytes;
+
+            if (isLarge && !_largeFileGate.Wait(0))
+            {
+                deferredLargeFiles.Add(sourceFile);
+                continue;
+            }
+
+            try
+            {
+                if (!CopyAndReportSingleFile(
+                        work, sourceFile, fileSize, totalFiles, totalSize,
+                        ref remainingFiles, ref remainingSize,
+                        encryptedExtensions, progress, errors))
+                {
+                    success = false;
+                }
+            }
+            finally
+            {
+                if (isLarge) _largeFileGate.Release();
+            }
+        }
+
+        // ── Passe 2 : gros fichiers différés, attente bloquante ──
+        foreach (string sourceFile in deferredLargeFiles)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            WaitWhilePaused(cancellationToken, isPaused);
+
+            long fileSize = SafeFileSize(sourceFile);
+            _largeFileGate.Wait(cancellationToken);
+            try
+            {
+                if (!CopyAndReportSingleFile(
+                        work, sourceFile, fileSize, totalFiles, totalSize,
+                        ref remainingFiles, ref remainingSize,
+                        encryptedExtensions, progress, errors))
+                {
+                    success = false;
+                }
+            }
+            finally
+            {
+                _largeFileGate.Release();
+            }
+        }
+
+        return success;
+    }
+
+    // ================================================================
+    // CopyAndReportSingleFile — Copie + chiffrement + reporting
+    // ================================================================
+
+    private bool CopyAndReportSingleFile(
+        Work work,
+        string sourceFile,
+        long fileSize,
+        int totalFiles,
+        long totalSize,
+        ref int remainingFiles,
+        ref long remainingSize,
+        HashSet<string> encryptedExtensions,
+        IProgress<WorkState> progress,
+        List<string> errors)
+    {
+        int progressionBefore = totalFiles > 0
+            ? (int)((totalFiles - remainingFiles) * 100L / totalFiles)
+            : 100;
+
+        progress.Report(MakeState(work, totalFiles, totalSize, remainingFiles, remainingSize,
+            progressionBefore, "Active", "", ""));
+
+        string relativePath = Path.GetRelativePath(work.GetSourceDirectory(), sourceFile);
+        string destinationFile = Path.Combine(work.GetDestinationDirectory(), relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+
+        long transferTime;
+        long encryptionTime = 0;
+        bool fileSuccess = true;
+        string errorMsg = "";
+
+        try
+        {
+            Stopwatch watch = Stopwatch.StartNew();
+            File.Copy(sourceFile, destinationFile, true);
+            watch.Stop();
+            transferTime = watch.ElapsedMilliseconds;
+        }
+        catch (Exception ex)
+        {
+            transferTime = -1;
+            fileSuccess = false;
+            errorMsg = ex.Message;
+            errors.Add($"{Path.GetFileName(sourceFile)} : {ex.Message}");
+        }
+
+        if (fileSuccess && ShouldEncrypt(sourceFile, encryptedExtensions))
+        {
+            try
+            {
+                encryptionTime = EncryptWithCryptoSoft(destinationFile);
+            }
+            catch (CryptoSoftException ex)
+            {
+                encryptionTime = ex.ErrorCode;
+                fileSuccess = false;
+                errorMsg = string.IsNullOrWhiteSpace(errorMsg)
+                    ? $"Erreur chiffrement : {ex.Message}"
+                    : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
+                errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                encryptionTime = -1;
+                fileSuccess = false;
+                errorMsg = string.IsNullOrWhiteSpace(errorMsg)
+                    ? $"Erreur chiffrement : {ex.Message}"
+                    : $"{errorMsg} | Erreur chiffrement : {ex.Message}";
+                errors.Add($"{Path.GetFileName(sourceFile)} : erreur chiffrement - {ex.Message}");
+            }
+        }
+
+        remainingFiles--;
+        remainingSize -= fileSize;
+        int progression = totalFiles > 0 ? (int)((totalFiles - remainingFiles) * 100L / totalFiles) : 100;
+
+        WorkState state = MakeState(work, totalFiles, totalSize, remainingFiles, remainingSize,
+            progression, remainingFiles > 0 ? "Active" : "Inactive", sourceFile, destinationFile);
+
+        lock (_ioWriteLock)
+        {
+            _stateFile.WriteProcess(state);
+        }
+        progress.Report(state);
+        lock (_ioWriteLock)
+        {
+            _logger.WriteLogs(work.GetName(), sourceFile, destinationFile, fileSize,
+                transferTime, encryptionTime, fileSuccess, errorMsg);
+        }
+
+        return fileSuccess;
+    }
+
+    // ================================================================
+    // Helpers
+    // ================================================================
+
+    private static WorkState MakeState(Work work, int totalFiles, long totalSize,
+        int remainingFiles, long remainingSize, int progression,
+        string status, string currentSource, string currentDest)
+    {
+        return new WorkState
+        {
+            WorkName = work.GetName(),
+            Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            Status = status,
+            TotalFiles = totalFiles,
+            TotalSize = totalSize,
+            RemainingFiles = remainingFiles,
+            RemainingSize = remainingSize,
+            Progression = progression,
+            CurrentSourceFile = currentSource,
+            CurrentDestinationFile = currentDest
+        };
+    }
+
     private void CompletePriorityPhase()
     {
         int remaining = Interlocked.Decrement(ref _remainingPriorityWorkers);
@@ -386,6 +391,12 @@ public class BackupService
         {
             _priorityPhaseCompleted.Set();
         }
+    }
+
+    private static long SafeFileSize(string path)
+    {
+        try { return new FileInfo(path).Length; }
+        catch { return 0; }
     }
 
     private static bool ShouldCopyInDifferential(string sourceFile, string destinationFile)
@@ -425,41 +436,6 @@ public class BackupService
         GeneralSettings settings = _settingsService.Load();
         int kb = settings.LargeFileThresholdKB;
         return kb > 0 ? (long)kb * 1024L : 0L;
-    }
-
-    private long CopyFileRespectingBandwidthLimit(
-        string sourceFile,
-        string destinationFile,
-        long fileSize,
-        long largeFileThresholdBytes,
-        CancellationToken cancellationToken)
-    {
-        // Règle bande passante : interdiction de transférer en parallèle
-        // plusieurs fichiers dont la taille dépasse le seuil. Les fichiers
-        // plus petits ne sont pas concernés et continuent en parallèle.
-        bool isLarge = largeFileThresholdBytes > 0 && fileSize > largeFileThresholdBytes;
-        bool gateTaken = false;
-
-        if (isLarge)
-        {
-            _largeFileGate.Wait(cancellationToken);
-            gateTaken = true;
-        }
-
-        try
-        {
-            Stopwatch watch = Stopwatch.StartNew();
-            File.Copy(sourceFile, destinationFile, true);
-            watch.Stop();
-            return watch.ElapsedMilliseconds;
-        }
-        finally
-        {
-            if (gateTaken)
-            {
-                _largeFileGate.Release();
-            }
-        }
     }
 
     private static bool IsPriorityFile(string sourceFile, HashSet<string> priorityExtensions)
@@ -535,7 +511,6 @@ public class BackupService
             return RunCryptoProcess("dotnet", $"\"{dllPath}\" --encrypt \"{destinationFile}\"");
         }
 
-        // Fallback de sécurité si le binaire externe n'est pas déployé.
         return CryptoEngine.EncryptFileInPlace(destinationFile);
     }
 
