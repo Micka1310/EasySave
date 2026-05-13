@@ -4,7 +4,7 @@
         xmlns:vm="clr-namespace:EasySave.WPF.ViewModels"
         xmlns:h="clr-namespace:EasySave.WPF.Helpers"
         Title="EasySave v2"
-        Icon="/EasySave.WPF;component/Assets/⌗.jpg"
+        Icon="/EasySave.WPF;component/Assets/app.png"
         Height="780" Width="1280"
         MinHeight="600" MinWidth="1000"
         WindowStartupLocation="CenterScreen"
@@ -45,7 +45,7 @@
                         <Border Width="40" Height="40" CornerRadius="10"
                                 Background="{StaticResource SurfaceElevatedBrush}"
                                 ClipToBounds="True">
-                            <Image Source="/EasySave.WPF;component/Assets/⌗.jpg"
+                            <Image Source="/EasySave.WPF;component/Assets/app.png"
                                    Stretch="UniformToFill" />
                         </Border>
                         <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
@@ -312,7 +312,7 @@
                                 <Border Width="64" Height="64" CornerRadius="32"
                                         Background="{StaticResource SurfaceElevatedBrush}"
                                         ClipToBounds="True">
-                                    <Image Source="/EasySave.WPF;component/Assets/⌗.jpg"
+                                    <Image Source="/EasySave.WPF;component/Assets/app.png"
                                            Stretch="UniformToFill" />
                                 </Border>
                                 <TextBlock Text="{Binding LblEmptyTitle}"

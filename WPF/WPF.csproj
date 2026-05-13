@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\⌗.jpg" />
+    <Resource Include="Assets\app.png" />
     <PackageReference Include="SharpVectors.Wpf" Version="1.8.4.2" />
     <ProjectReference Include="..\CryptoSoft\CryptoSoft.csproj" />
     <ProjectReference Include="..\Lib\Lib.csproj" />
