@@ -11,9 +11,6 @@ using WorkListFile;
 
 namespace EasySave.WPF.ViewModels;
 
-/// <summary>
-/// VM principal : orchestration globale UI + exécution.
-/// </summary>
 public partial class MainViewModel : ViewModelBase
 {
     private readonly WorkList _workList;
@@ -143,8 +140,13 @@ public partial class MainViewModel : ViewModelBase
     public ICommand OpenLogsFolderCommand { get; }
     public ICommand IncreaseLargeFileThresholdCommand { get; }
     public ICommand DecreaseLargeFileThresholdCommand { get; }
+    public ICommand PauseAllCommand { get; }
+    public ICommand ResumeAllCommand { get; }
+    public ICommand StopAllCommand { get; }
 
     public Action<CreateWorkViewModel>? RequestShowCreateDialog { get; set; }
+
+    private List<WorkItemViewModel>? _activeTargets;
 
     public MainViewModel()
     {
@@ -183,6 +185,9 @@ public partial class MainViewModel : ViewModelBase
         OpenLogsFolderCommand = new RelayCommand(_ => OpenLogsFolder(), _ => true);
         IncreaseLargeFileThresholdCommand = new RelayCommand(_ => IncreaseLargeFileThreshold(), _ => true);
         DecreaseLargeFileThresholdCommand = new RelayCommand(_ => DecreaseLargeFileThreshold(), _ => true);
+        PauseAllCommand = new RelayCommand(_ => PauseAllWorks(), _ => IsRunning);
+        ResumeAllCommand = new RelayCommand(_ => ResumeAllWorks(), _ => IsRunning);
+        StopAllCommand = new RelayCommand(_ => StopAllWorks(), _ => IsRunning);
 
         RefreshLogPreview();
     }
@@ -254,6 +259,10 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    // ================================================================
+    // Exécution avec Pause / Resume / Stop par travail
+    // ================================================================
+
     private async Task RunWorksAsync(List<WorkItemViewModel> targets)
     {
         if (targets.Count == 0 || IsRunning) return;
@@ -268,12 +277,14 @@ public partial class MainViewModel : ViewModelBase
         IsRunning = true;
         StatusBanner = "";
         ConcurrentBag<string> errors = [];
+        _activeTargets = targets;
 
         try
         {
             foreach (WorkItemViewModel vm in targets)
             {
                 vm.Reset();
+                vm.Cts = new CancellationTokenSource();
                 vm.StatusKey = "Active";
             }
 
@@ -283,12 +294,23 @@ public partial class MainViewModel : ViewModelBase
         }
         finally
         {
+            foreach (WorkItemViewModel vm in targets)
+            {
+                vm.Cts?.Dispose();
+                vm.Cts = null;
+            }
+
+            _activeTargets = null;
             IsRunning = false;
         }
 
         if (errors.IsEmpty)
         {
-            ShowBanner(IsFrench ? "Sauvegarde terminée avec succès." : "Backup completed successfully.", "success");
+            bool anyCancelled = targets.Any(vm => vm.StatusKey == "Cancelled");
+            if (anyCancelled)
+                ShowBanner(IsFrench ? "Sauvegarde interrompue." : "Backup stopped.", "warning");
+            else
+                ShowBanner(IsFrench ? "Sauvegarde terminée avec succès." : "Backup completed successfully.", "success");
         }
         else
         {
@@ -308,24 +330,24 @@ public partial class MainViewModel : ViewModelBase
         });
 
         using CancellationTokenSource monitorCts = new();
-        bool pauseRequestedByBusinessSoftware = false;
-        Task monitorTask = MonitorBusinessSoftwareAsync(
-            vm,
-            () => pauseRequestedByBusinessSoftware,
-            v => pauseRequestedByBusinessSoftware = v,
-            monitorCts.Token);
+        Task monitorTask = MonitorBusinessSoftwareAsync(vm, monitorCts.Token);
 
         List<string> jobErrors = [];
         bool ok;
 
         try
         {
+            CancellationToken jobToken = vm.Cts?.Token ?? CancellationToken.None;
             ok = await Task.Run(() => _backupService.ExecuteWork(
                 vm.Work,
                 reporter,
                 jobErrors,
-                CancellationToken.None,
-                () => pauseRequestedByBusinessSoftware));
+                jobToken,
+                () => vm.PauseRequested));
+        }
+        catch (OperationCanceledException)
+        {
+            ok = false;
         }
         finally
         {
@@ -333,9 +355,39 @@ public partial class MainViewModel : ViewModelBase
             await monitorTask;
         }
 
-        vm.StatusKey = ok ? "Done" : "Error";
+        if (vm.StatusKey != "Cancelled")
+            vm.StatusKey = ok ? "Done" : "Error";
+
         foreach (string e in jobErrors)
             allErrors.Add($"[{vm.Name}] {e}");
+    }
+
+    // ================================================================
+    // Contrôles globaux
+    // ================================================================
+
+    private void PauseAllWorks()
+    {
+        if (_activeTargets is null) return;
+        foreach (WorkItemViewModel vm in _activeTargets.Where(vm => vm.CanPause))
+            vm.RequestPause();
+        ShowBanner(IsFrench ? "Tous les travaux en pause." : "All jobs paused.", "info");
+    }
+
+    private void ResumeAllWorks()
+    {
+        if (_activeTargets is null) return;
+        foreach (WorkItemViewModel vm in _activeTargets.Where(vm => vm.CanResume))
+            vm.RequestResume();
+        ShowBanner(IsFrench ? "Tous les travaux repris." : "All jobs resumed.", "info");
+    }
+
+    private void StopAllWorks()
+    {
+        if (_activeTargets is null) return;
+        foreach (WorkItemViewModel vm in _activeTargets.Where(vm => vm.CanStop))
+            vm.RequestStop();
+        ShowBanner(IsFrench ? "Tous les travaux arrêtés." : "All jobs stopped.", "warning");
     }
 
     private void ShowBanner(string text, string kind)

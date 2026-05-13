@@ -98,6 +98,12 @@ public partial class MainViewModel
     public string LblSettingsAboutBody => _lang.GetString("wpf_settings_about_body");
     public string LblPagePrev => _lang.GetString("wpf_page_prev");
     public string LblPageNext => _lang.GetString("wpf_page_next");
+    public string LblPause => _lang.GetString("wpf_pause");
+    public string LblResume => _lang.GetString("wpf_resume");
+    public string LblStop => _lang.GetString("wpf_stop");
+    public string LblPauseAll => IsFrench ? "Tout mettre en pause" : "Pause all";
+    public string LblResumeAll => IsFrench ? "Tout reprendre" : "Resume all";
+    public string LblStopAll => IsFrench ? "Tout arrêter" : "Stop all";
 
     private void NotifyAllLabels()
     {
@@ -124,7 +130,9 @@ public partial class MainViewModel
             nameof(LblSettingsSectionEncryption), nameof(LblSettingsEncryptionExtensions), nameof(LblSettingsEncryptionSelected),
             nameof(LblSettingsEncryptionAdd), nameof(LblSettingsEncryptionAddButton), nameof(LblSettingsEncryptionHint),
             nameof(LblSettingsCryptoSoftFolder), nameof(LblSettingsSectionAbout), nameof(LblSettingsAboutBody),
-            nameof(LblPagePrev), nameof(LblPageNext), nameof(LblPaginationDetail), nameof(LblPaginationPages)
+            nameof(LblPagePrev), nameof(LblPageNext), nameof(LblPaginationDetail), nameof(LblPaginationPages),
+            nameof(LblPause), nameof(LblResume), nameof(LblStop),
+            nameof(LblPauseAll), nameof(LblResumeAll), nameof(LblStopAll)
         ];
 
         foreach (string label in labels)

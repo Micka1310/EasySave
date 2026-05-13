@@ -232,6 +232,29 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
+
+                    <!-- Contrôles globaux temps réel (visibles pendant l'exécution) -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0"
+                                Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
+                        <Button Style="{StaticResource SecondaryButton}"
+                                Command="{Binding PauseAllCommand}"
+                                ToolTip="{Binding LblPauseAll}"
+                                Margin="0,0,6,0" MinWidth="36" Padding="10,6">
+                            <TextBlock Text="⏸" FontSize="13" />
+                        </Button>
+                        <Button Style="{StaticResource SecondaryButton}"
+                                Command="{Binding ResumeAllCommand}"
+                                ToolTip="{Binding LblResumeAll}"
+                                Margin="0,0,6,0" MinWidth="36" Padding="10,6">
+                            <TextBlock Text="▶" FontSize="13" />
+                        </Button>
+                        <Button Style="{StaticResource SecondaryButton}"
+                                Command="{Binding StopAllCommand}"
+                                ToolTip="{Binding LblStopAll}"
+                                MinWidth="36" Padding="10,6">
+                            <TextBlock Text="⏹" FontSize="13" Foreground="#E74C3C" />
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
 
@@ -385,12 +408,32 @@
                                                         </Border>
                                                     </StackPanel>
 
-                                                    <Button Grid.Column="2"
-                                                            Style="{StaticResource IconButton}"
-                                                            Content="🗑"
-                                                            Command="{Binding DataContext.DeleteWorkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                            CommandParameter="{Binding}"
-                                                            ToolTip="{Binding DataContext.LblDelete, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <!-- Boutons temps réel par travail -->
+                                                        <Button Style="{StaticResource IconButton}"
+                                                                Content="⏸"
+                                                                Command="{Binding PauseCommand}"
+                                                                ToolTip="{Binding DataContext.LblPause, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                Visibility="{Binding CanPause, Converter={StaticResource BoolToVis}}"
+                                                                Margin="0,0,4,0" />
+                                                        <Button Style="{StaticResource IconButton}"
+                                                                Content="▶"
+                                                                Command="{Binding ResumeCommand}"
+                                                                ToolTip="{Binding DataContext.LblResume, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                Visibility="{Binding CanResume, Converter={StaticResource BoolToVis}}"
+                                                                Margin="0,0,4,0" />
+                                                        <Button Style="{StaticResource IconButton}"
+                                                                Content="⏹"
+                                                                Command="{Binding StopCommand}"
+                                                                ToolTip="{Binding DataContext.LblStop, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                Visibility="{Binding CanStop, Converter={StaticResource BoolToVis}}"
+                                                                Margin="0,0,8,0" />
+                                                        <Button Style="{StaticResource IconButton}"
+                                                                Content="🗑"
+                                                                Command="{Binding DataContext.DeleteWorkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="{Binding DataContext.LblDelete, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                                    </StackPanel>
                                                 </Grid>
 
                                                 <Grid Grid.Row="1" Margin="0,16,0,0">
