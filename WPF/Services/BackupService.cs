@@ -514,44 +514,66 @@ public class BackupService
         return CryptoEngine.EncryptFileInPlace(destinationFile);
     }
 
+    private const int CryptoSoftBusyExitCode = 4;
+    private const int CryptoSoftMaxRetries = 10;
+    private const int CryptoSoftRetryDelayMs = 500;
+
     private static long RunCryptoProcess(string fileName, string arguments)
     {
-        using Process process = new Process
+        for (int attempt = 0; attempt <= CryptoSoftMaxRetries; attempt++)
         {
-            StartInfo = new ProcessStartInfo
+            using Process process = new Process
             {
-                FileName = fileName,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            if (!process.Start())
+            {
+                throw new CryptoSoftException("Impossible de démarrer CryptoSoft.", -100);
             }
-        };
 
-        if (!process.Start())
-        {
-            throw new CryptoSoftException("Impossible de démarrer CryptoSoft.", -100);
+            string stdOut = process.StandardOutput.ReadToEnd().Trim();
+            string stdErr = process.StandardError.ReadToEnd().Trim();
+            process.WaitForExit();
+
+            if (process.ExitCode == CryptoSoftBusyExitCode)
+            {
+                if (attempt < CryptoSoftMaxRetries)
+                {
+                    Thread.Sleep(CryptoSoftRetryDelayMs);
+                    continue;
+                }
+
+                throw new CryptoSoftException(
+                    "CryptoSoft est déjà en cours d'exécution (mono-instance). Nombre maximal de tentatives atteint.",
+                    -CryptoSoftBusyExitCode);
+            }
+
+            if (process.ExitCode != 0)
+            {
+                long errorCode = process.ExitCode > 0 ? -process.ExitCode : -1;
+                throw new CryptoSoftException(string.IsNullOrWhiteSpace(stdErr)
+                    ? "CryptoSoft a retourné une erreur."
+                    : stdErr, errorCode);
+            }
+
+            if (long.TryParse(stdOut, NumberStyles.Integer, CultureInfo.InvariantCulture, out long elapsedMs))
+            {
+                return elapsedMs;
+            }
+
+            throw new CryptoSoftException("CryptoSoft n'a pas renvoyé de temps de chiffrement valide.", -101);
         }
 
-        string stdOut = process.StandardOutput.ReadToEnd().Trim();
-        string stdErr = process.StandardError.ReadToEnd().Trim();
-        process.WaitForExit();
-
-        if (process.ExitCode != 0)
-        {
-            long errorCode = process.ExitCode > 0 ? -process.ExitCode : -1;
-            throw new CryptoSoftException(string.IsNullOrWhiteSpace(stdErr)
-                ? "CryptoSoft a retourné une erreur."
-                : stdErr, errorCode);
-        }
-
-        if (long.TryParse(stdOut, NumberStyles.Integer, CultureInfo.InvariantCulture, out long elapsedMs))
-        {
-            return elapsedMs;
-        }
-
-        throw new CryptoSoftException("CryptoSoft n'a pas renvoyé de temps de chiffrement valide.", -101);
+        throw new CryptoSoftException("CryptoSoft mono-instance : échec après toutes les tentatives.", -CryptoSoftBusyExitCode);
     }
 
     private sealed class CryptoSoftException : Exception
