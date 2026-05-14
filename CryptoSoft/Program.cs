@@ -5,7 +5,8 @@ namespace CryptoSoft;
 
 public static class Program
 {
-    private const string MutexName = "Global\\CryptoSoft_SingleInstance_Mutex";
+    /// <summary>Nom du mutex système pour l’instance unique (tests : voir UnitTest).</summary>
+    internal const string SingleInstanceMutexName = "Global\\CryptoSoft_SingleInstance_Mutex";
 
     public static int Main(string[] args)
     {
@@ -22,7 +23,7 @@ public static class Program
             return 3;
         }
 
-        using var mutex = new Mutex(false, MutexName);
+        using var mutex = new Mutex(false, SingleInstanceMutexName);
 
         bool acquired;
         try
