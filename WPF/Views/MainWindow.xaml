@@ -78,22 +78,20 @@
                             ToolTip="{Binding ThemeToggleToolTip}"
                             VerticalAlignment="Top">
                         <Grid Width="18" Height="18">
-                            <!-- Soleil : mode sombre → passer en clair -->
-                            <Viewbox Width="18" Height="18"
-                                     Visibility="{Binding IsDarkTheme, Converter={StaticResource BoolToVis}}">
-                                <Canvas Width="24" Height="24">
-                                    <Path Fill="{DynamicResource AccentBrush}"
-                                          Data="M12,7 A5,5 0 1 1 12,17 A5,5 0 1 1 12,7 M12,2 L12,5 M12,19 L12,22 M4.22,4.22 L6.34,6.34 M17.66,17.66 L19.78,19.78 M2,12 L5,12 M19,12 L22,12 M4.22,19.78 L6.34,17.66 M17.66,6.34 L19.78,4.22" />
-                                </Canvas>
-                            </Viewbox>
-                            <!-- Lune : mode clair → passer en sombre -->
-                            <Viewbox Width="18" Height="18"
-                                     Visibility="{Binding IsLightTheme, Converter={StaticResource BoolToVis}}">
-                                <Canvas Width="24" Height="24">
-                                    <Path Fill="{DynamicResource AccentBrush}"
-                                          Data="M17.2,5.8 C14.4,5.2 11.8,7.2 11.2,10 C10.6,12.8 12.2,15.6 15,16.6 C13.4,15.2 12.6,13.2 12.8,11 C13,8.6 14.8,6.6 17.2,5.8 Z" />
-                                </Canvas>
-                            </Viewbox>
+                            <TextBlock Text="&#xE706;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="15"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Visibility="{Binding IsDarkTheme, Converter={StaticResource BoolToVis}}" />
+                            <Path Visibility="{Binding IsLightTheme, Converter={StaticResource BoolToVis}}"
+                                  Fill="{DynamicResource AccentBrush}"
+                                  Stretch="Uniform"
+                                  Width="16" Height="16"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Data="M13,2 C9,2 6,5.5 6,9 C6,12.5 9,16 13,16 C11,14 10,11.5 10,9 C10,6.5 11,4 13,2 Z" />
                         </Grid>
                     </Button>
                 </Grid>
