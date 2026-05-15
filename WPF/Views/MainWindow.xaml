@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:EasySave.WPF.ViewModels"
         xmlns:h="clr-namespace:EasySave.WPF.Helpers"
-        Title="EasySave v2"
+        Title="EasySave v3"
         Icon="/EasySave.WPF;component/Assets/app.png"
-        Height="780" Width="1280"
+        Height="820" Width="1320"
         MinHeight="600" MinWidth="1000"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
@@ -22,16 +22,17 @@
         <h:BackupTypeToBrushConverter x:Key="BackupTypeToBrush" />
     </Window.Resources>
 
-    <Grid>
+    <Grid Background="{StaticResource MainCanvasGradientBrush}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280" />
+            <ColumnDefinition Width="292" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <!-- ========================================================== -->
         <!-- SIDEBAR -->
         <!-- ========================================================== -->
-        <Border Grid.Column="0" Background="{StaticResource SidebarGradientBrush}">
+        <Border Grid.Column="0" Background="{StaticResource SidebarGradientBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -40,21 +41,32 @@
                 </Grid.RowDefinitions>
 
                 <!-- Logo / titre app -->
-                <StackPanel Grid.Row="0" Margin="24,28,24,32">
+                <StackPanel Grid.Row="0" Margin="22,26,22,28">
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="40" Height="40" CornerRadius="10"
-                                Background="{StaticResource SurfaceElevatedBrush}"
+                        <Border Width="48" Height="48" CornerRadius="14"
+                                BorderBrush="{StaticResource AccentLineGradient}"
+                                BorderThickness="2"
                                 ClipToBounds="True">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="20" ShadowDepth="0" Color="#6EE7FF" Opacity="0.45" />
+                            </Border.Effect>
                             <Image Source="/EasySave.WPF;component/Assets/app.png"
                                    Stretch="UniformToFill" />
                         </Border>
-                        <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding LblAppTitle}"
-                                       FontSize="18" FontWeight="Bold"
-                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                        <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding LblAppTitle}"
+                                           FontSize="20" FontWeight="Bold"
+                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                <Border Style="{StaticResource VersionBadge}" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding LblVersionBadge}"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="{StaticResource AccentBrush}" />
+                                </Border>
+                            </StackPanel>
                             <TextBlock Text="{Binding LblAppSubtitle}"
-                                       FontSize="11"
-                                       Foreground="{StaticResource TextMutedBrush}" />
+                                       FontSize="11" Margin="0,4,0,0"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -127,8 +139,8 @@
                             </Grid>
                         </StackPanel>
                     </Border>
-                    <TextBlock Text="v2.0" FontSize="10" Margin="4,12,0,0"
-                               Foreground="{StaticResource TextMutedBrush}" />
+                    <TextBlock Text="{Binding LblVersionBadge}" FontSize="10" Margin="8,14,0,0"
+                               Foreground="{StaticResource TextMutedBrush}" Opacity="0.7" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -145,36 +157,47 @@
             </Grid.RowDefinitions>
 
             <!-- Hero -->
-            <Border Grid.Row="0" Margin="24,24,24,8"
+            <Border Grid.Row="0" Margin="28,28,28,10"
                     Background="{StaticResource HeroGradientBrush}"
-                    CornerRadius="18"
-                    Padding="24,20"
-                    BorderBrush="{StaticResource HeroOverlayBrush}"
+                    CornerRadius="22"
+                    Padding="28,24"
+                    BorderBrush="{StaticResource BorderGlowBrush}"
                     BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="40" ShadowDepth="0" Color="#6EE7FF" Opacity="0.12" />
+                </Border.Effect>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="EasySave Experience"
-                                   FontSize="22"
-                                   FontWeight="Bold"
-                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding LblHeroTitle}"
+                                   Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="EasySave"
+                                   FontSize="32" FontWeight="Bold" Margin="0,6,0,0"
+                                   Foreground="{StaticResource TextPrimaryBrush}">
+                            <TextBlock.Effect>
+                                <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#6EE7FF" Opacity="0.2" />
+                            </TextBlock.Effect>
+                        </TextBlock>
                         <TextBlock Text="{Binding LblAppSubtitle}"
-                                   Margin="0,6,0,0"
-                                   FontSize="13"
-                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                   Margin="0,8,0,0" FontSize="14"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
                     </StackPanel>
-                    <Border Grid.Column="1"
-                            Background="#22000000"
-                            CornerRadius="999"
-                            Padding="14,8"
-                            VerticalAlignment="Center">
-                        <TextBlock Text="{Binding LblCount}"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource AccentBrush}" />
-                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <Border Style="{StaticResource VersionBadge}" Margin="0,0,0,10" HorizontalAlignment="Right">
+                            <TextBlock Text="{Binding LblVersionBadge}" FontWeight="Bold" FontSize="11"
+                                       Foreground="{StaticResource AccentBrush}" />
+                        </Border>
+                        <Border Background="#33000000" CornerRadius="999"
+                                BorderBrush="{StaticResource AccentBrush}" BorderThickness="1"
+                                Padding="18,10">
+                            <TextBlock Text="{Binding LblCount}"
+                                       FontWeight="Bold" FontSize="14"
+                                       Foreground="{StaticResource AccentBrush}" />
+                        </Border>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -187,7 +210,7 @@
 
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding LblPrimaryHeader}"
-                               FontSize="26" FontWeight="Bold"
+                               FontSize="28" FontWeight="Bold"
                                Foreground="{StaticResource TextPrimaryBrush}" />
                     <TextBlock Text="{Binding LblPrimarySubtitle}"
                                FontSize="13" Margin="0,4,0,0"
@@ -328,9 +351,7 @@
                         <!-- État vide -->
                         <Border Visibility="{Binding Works.Count, Converter={StaticResource CountToVisShow}}"
                                 VerticalAlignment="Center" HorizontalAlignment="Center"
-                                Background="{StaticResource SurfaceBrush}"
-                                BorderBrush="{StaticResource BorderBrush}"
-                                BorderThickness="1" CornerRadius="16" Padding="48,40">
+                                Style="{StaticResource CardPremium}" Padding="56,48">
                             <StackPanel HorizontalAlignment="Center">
                                 <Border Width="64" Height="64" CornerRadius="32"
                                         Background="{StaticResource SurfaceElevatedBrush}"
@@ -360,7 +381,7 @@
                             <ItemsControl ItemsSource="{Binding PagedWorks}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                                        <Border Style="{StaticResource CardPremium}" Margin="0,0,0,14">
                                             <Grid>
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="Auto" />

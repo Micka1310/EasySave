@@ -32,15 +32,28 @@ public sealed class DailyLogStorage(string directory)
     public Task AppendAsync(CentralLogEntryDto dto, CancellationToken ct = default)
     {
         string line = JsonSerializer.Serialize(dto, JsonLine) + Environment.NewLine;
-        string path = Path.Combine(_dir, $"{DateTime.UtcNow:yyyy-MM-dd}.ndjson");
 
         lock (_lock)
         {
-            Directory.CreateDirectory(_dir);
+            EnsureLogDirectoryExists();
+            string path = Path.Combine(_dir, $"{DateTime.UtcNow:yyyy-MM-dd}.ndjson");
             File.AppendAllText(path, line);
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Si le dossier hôte a été supprimé pendant que Docker tourne, le montage peut devenir un fichier :
+    /// on corrige pour éviter l'erreur « The file already exists ».
+    /// </summary>
+    private void EnsureLogDirectoryExists()
+    {
+        if (File.Exists(_dir))
+            File.Delete(_dir);
+
+        if (!Directory.Exists(_dir))
+            Directory.CreateDirectory(_dir);
     }
 }
 
@@ -53,6 +66,10 @@ public class Program
         string logDir = builder.Configuration["LOG_DATA_DIR"]
             ?? Environment.GetEnvironmentVariable("LOG_DATA_DIR")
             ?? Path.Combine(AppContext.BaseDirectory, "logs");
+
+        if (File.Exists(logDir))
+            File.Delete(logDir);
+        Directory.CreateDirectory(logDir);
 
         Console.WriteLine($"LogCentral — journaux : {Path.GetFullPath(logDir)}");
         builder.Services.AddSingleton(new DailyLogStorage(logDir));
@@ -73,7 +90,7 @@ public class Program
             <li><a href="/health">/health</a> — test (doit afficher OK)</li>
             <li><code>POST /api/logs</code> — réception des entrées (JSON)</li>
             </ul>
-            <p>Fichiers sur le serveur : un <code>.ndjson</code> par jour dans le dossier monté <code>central-logs</code> à la racine du projet.</p>
+            <p>Fichiers sur le serveur : un <code>.ndjson</code> par jour (dossier configuré côté Docker, ex. volume sur le disque du serveur).</p>
             <p>URL à mettre dans EasySave : <code>http://localhost:5088</code></p>
             </body></html>
             """,

@@ -1,7 +1,11 @@
-# Centralisation des journaux EasySave (projet scolaire — pas de vrai serveur distant).
-# Sur TON PC : docker compose up -d --build
-# URL dans EasySave : http://localhost:5088
-# Fichiers centralisés : dossier central-logs/ à la racine du projet
+# Démo locale (projet scolaire) : Docker sur TON PC simule le serveur d'entreprise.
+#   docker compose down
+#   docker compose up -d --build
+# EasySave → URL http://localhost:5088
+# Logs visibles dans ./central-logs/ (équivalent du disque du serveur en prod)
+#
+# En VRAI serveur : même image Docker, volume sur /var/easysave/logs (pas le dossier du projet),
+# les PC clients envoient vers http://nom-du-serveur:5088
 
 services:
   easysave-logcentral:

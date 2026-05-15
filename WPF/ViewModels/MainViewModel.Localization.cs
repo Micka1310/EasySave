@@ -21,7 +21,9 @@ public partial class MainViewModel
     public string LblPrimaryHeader => ShowWorksPanel ? LblHeader : LblSettingsTitle;
     public string LblPrimarySubtitle => ShowWorksPanel ? LblCount : LblSettingsSubtitle;
     public string LblAppTitle => "EasySave";
-    public string LblAppSubtitle => IsFrench ? "Outil de sauvegarde — v2" : "Backup tool — v2";
+    public string LblAppSubtitle => IsFrench ? "Suite de sauvegarde professionnelle — v3" : "Professional backup suite — v3";
+    public string LblVersionBadge => "v3.0";
+    public string LblHeroTitle => IsFrench ? "Centre de contrôle" : "Control center";
     public string LblSectionMenu => _lang.GetString("wpf_section_menu");
     public string LblSectionLanguage => _lang.GetString("wpf_section_language");
     public string LblNavWorks => IsFrench ? "Travaux" : "Jobs";
@@ -113,7 +115,8 @@ public partial class MainViewModel
     {
         string[] labels =
         [
-            nameof(LblAppSubtitle), nameof(LblSectionMenu), nameof(LblSectionLanguage), nameof(LblSectionLogFormat),
+            nameof(LblAppSubtitle), nameof(LblVersionBadge), nameof(LblHeroTitle),
+            nameof(LblSectionMenu), nameof(LblSectionLanguage), nameof(LblSectionLogFormat),
             nameof(LblLogJson), nameof(LblLogXml), nameof(LblNavWorks), nameof(LblNavSettings), nameof(LblHeader),
             nameof(LblCount), nameof(LblPrimaryHeader), nameof(LblPrimarySubtitle), nameof(LblNew),
             nameof(LblRunSelected), nameof(LblRunAll), nameof(LblEmptyTitle), nameof(LblEmptySubtitle),
