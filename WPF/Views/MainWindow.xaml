@@ -22,7 +22,7 @@
         <h:BackupTypeToBrushConverter x:Key="BackupTypeToBrush" />
     </Window.Resources>
 
-    <Grid Background="{StaticResource MainCanvasGradientBrush}">
+    <Grid Background="{DynamicResource MainCanvasGradientBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="292" />
             <ColumnDefinition Width="*" />
@@ -31,8 +31,8 @@
         <!-- ========================================================== -->
         <!-- SIDEBAR -->
         <!-- ========================================================== -->
-        <Border Grid.Column="0" Background="{StaticResource SidebarGradientBrush}"
-                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+        <Border Grid.Column="0" Background="{DynamicResource SidebarGradientBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -41,10 +41,14 @@
                 </Grid.RowDefinitions>
 
                 <!-- Logo / titre app -->
-                <StackPanel Grid.Row="0" Margin="22,26,22,28">
-                    <StackPanel Orientation="Horizontal">
+                <Grid Grid.Row="0" Margin="22,22,22,24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
                         <Border Width="48" Height="48" CornerRadius="14"
-                                BorderBrush="{StaticResource AccentLineGradient}"
+                                BorderBrush="{DynamicResource AccentLineGradient}"
                                 BorderThickness="2"
                                 ClipToBounds="True">
                             <Border.Effect>
@@ -57,24 +61,47 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding LblAppTitle}"
                                            FontSize="20" FontWeight="Bold"
-                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
                                 <Border Style="{StaticResource VersionBadge}" Margin="10,0,0,0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding LblVersionBadge}"
                                                FontSize="10" FontWeight="Bold"
-                                               Foreground="{StaticResource AccentBrush}" />
+                                               Foreground="{DynamicResource AccentBrush}" />
                                 </Border>
                             </StackPanel>
                             <TextBlock Text="{Binding LblAppSubtitle}"
                                        FontSize="11" Margin="0,4,0,0"
-                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
                         </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                    <Button Grid.Column="1" Style="{StaticResource ThemeToggleButton}"
+                            Command="{Binding ToggleThemeCommand}"
+                            ToolTip="{Binding ThemeToggleToolTip}"
+                            VerticalAlignment="Top">
+                        <Grid Width="18" Height="18">
+                            <!-- Soleil : mode sombre → passer en clair -->
+                            <Viewbox Width="18" Height="18"
+                                     Visibility="{Binding IsDarkTheme, Converter={StaticResource BoolToVis}}">
+                                <Canvas Width="24" Height="24">
+                                    <Path Fill="{DynamicResource AccentBrush}"
+                                          Data="M12,7 A5,5 0 1 1 12,17 A5,5 0 1 1 12,7 M12,2 L12,5 M12,19 L12,22 M4.22,4.22 L6.34,6.34 M17.66,17.66 L19.78,19.78 M2,12 L5,12 M19,12 L22,12 M4.22,19.78 L6.34,17.66 M17.66,6.34 L19.78,4.22" />
+                                </Canvas>
+                            </Viewbox>
+                            <!-- Lune : mode clair → passer en sombre -->
+                            <Viewbox Width="18" Height="18"
+                                     Visibility="{Binding IsLightTheme, Converter={StaticResource BoolToVis}}">
+                                <Canvas Width="24" Height="24">
+                                    <Path Fill="{DynamicResource AccentBrush}"
+                                          Data="M17.2,5.8 C14.4,5.2 11.8,7.2 11.2,10 C10.6,12.8 12.2,15.6 15,16.6 C13.4,15.2 12.6,13.2 12.8,11 C13,8.6 14.8,6.6 17.2,5.8 Z" />
+                                </Canvas>
+                            </Viewbox>
+                        </Grid>
+                    </Button>
+                </Grid>
 
                 <!-- Menu navigation -->
                 <StackPanel Grid.Row="1" Margin="0,8,0,0">
                     <TextBlock Text="{Binding LblSectionMenu}" FontSize="10" FontWeight="Bold" Margin="32,12,0,8"
-                               Foreground="{StaticResource TextMutedBrush}" />
+                               Foreground="{DynamicResource TextMutedBrush}" />
 
                     <RadioButton Style="{StaticResource SidebarItem}" GroupName="Nav"
                                  IsChecked="{Binding ShowWorksPanel, Mode=TwoWay}">
@@ -95,11 +122,11 @@
                 <!-- Toggle langue + version -->
                 <StackPanel Grid.Row="2" Margin="20,0,20,24">
                     <Border Style="{StaticResource Card}" Padding="14" CornerRadius="10"
-                            Background="{StaticResource SurfaceElevatedBrush}"
+                            Background="{DynamicResource SurfaceElevatedBrush}"
                             Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="{Binding LblSectionLogFormat}" FontSize="10" FontWeight="Bold"
-                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        Margin="0,0,0,8" />
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -118,10 +145,10 @@
                         </StackPanel>
                     </Border>
                     <Border Style="{StaticResource Card}" Padding="14" CornerRadius="10"
-                            Background="{StaticResource SurfaceElevatedBrush}">
+                            Background="{DynamicResource SurfaceElevatedBrush}">
                         <StackPanel>
                             <TextBlock Text="{Binding LblSectionLanguage}" FontSize="10" FontWeight="Bold"
-                                       Foreground="{StaticResource TextMutedBrush}"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        Margin="0,0,0,8" />
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -140,7 +167,7 @@
                         </StackPanel>
                     </Border>
                     <TextBlock Text="{Binding LblVersionBadge}" FontSize="10" Margin="8,14,0,0"
-                               Foreground="{StaticResource TextMutedBrush}" Opacity="0.7" />
+                               Foreground="{DynamicResource TextMutedBrush}" Opacity="0.7" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -158,10 +185,10 @@
 
             <!-- Hero -->
             <Border Grid.Row="0" Margin="28,28,28,10"
-                    Background="{StaticResource HeroGradientBrush}"
+                    Background="{DynamicResource HeroGradientBrush}"
                     CornerRadius="22"
                     Padding="28,24"
-                    BorderBrush="{StaticResource BorderGlowBrush}"
+                    BorderBrush="{DynamicResource BorderGlowBrush}"
                     BorderThickness="1">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="40" ShadowDepth="0" Color="#6EE7FF" Opacity="0.12" />
@@ -176,26 +203,26 @@
                                    Style="{StaticResource SectionTitle}" />
                         <TextBlock Text="EasySave"
                                    FontSize="32" FontWeight="Bold" Margin="0,6,0,0"
-                                   Foreground="{StaticResource TextPrimaryBrush}">
+                                   Foreground="{DynamicResource TextPrimaryBrush}">
                             <TextBlock.Effect>
                                 <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#6EE7FF" Opacity="0.2" />
                             </TextBlock.Effect>
                         </TextBlock>
                         <TextBlock Text="{Binding LblAppSubtitle}"
                                    Margin="0,8,0,0" FontSize="14"
-                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <Border Style="{StaticResource VersionBadge}" Margin="0,0,0,10" HorizontalAlignment="Right">
                             <TextBlock Text="{Binding LblVersionBadge}" FontWeight="Bold" FontSize="11"
-                                       Foreground="{StaticResource AccentBrush}" />
+                                       Foreground="{DynamicResource AccentBrush}" />
                         </Border>
                         <Border Background="#33000000" CornerRadius="999"
-                                BorderBrush="{StaticResource AccentBrush}" BorderThickness="1"
+                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
                                 Padding="18,10">
                             <TextBlock Text="{Binding LblCount}"
                                        FontWeight="Bold" FontSize="14"
-                                       Foreground="{StaticResource AccentBrush}" />
+                                       Foreground="{DynamicResource AccentBrush}" />
                         </Border>
                     </StackPanel>
                 </Grid>
@@ -211,10 +238,10 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding LblPrimaryHeader}"
                                FontSize="28" FontWeight="Bold"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="{Binding LblPrimarySubtitle}"
                                FontSize="13" Margin="0,4,0,0"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                TextWrapping="Wrap" />
                 </StackPanel>
 
@@ -284,7 +311,7 @@
             <!-- Banner de statut -->
             <Border Grid.Row="2" Margin="32,0,32,16"
                     Visibility="{Binding HasStatusBanner, Converter={StaticResource BoolToVis}}"
-                    Background="{StaticResource SurfaceBrush}"
+                    Background="{DynamicResource SurfaceBrush}"
                     BorderBrush="{Binding StatusBannerKind, Converter={StaticResource BannerKindToBrush}}"
                     BorderThickness="1" CornerRadius="8" Padding="16,12">
                 <StackPanel Orientation="Horizontal">
@@ -295,7 +322,7 @@
                              IsReadOnly="True"
                              BorderThickness="0"
                              Background="Transparent"
-                             Foreground="{StaticResource TextPrimaryBrush}"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
                              TextWrapping="Wrap"
                              VerticalScrollBarVisibility="Auto"
                              HorizontalScrollBarVisibility="Auto"
@@ -316,8 +343,8 @@
 
                     <Border Grid.Row="0" Margin="0,0,0,12"
                             Visibility="{Binding ShowPaginationBar, Converter={StaticResource BoolToVis}}"
-                            Background="{StaticResource SurfaceElevatedBrush}"
-                            BorderBrush="{StaticResource BorderBrush}"
+                            Background="{DynamicResource SurfaceElevatedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1" CornerRadius="10" Padding="12,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -333,11 +360,11 @@
                             <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center">
                                 <TextBlock Text="{Binding LblPaginationPages}"
                                            HorizontalAlignment="Center" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
                                 <TextBlock Text="{Binding LblPaginationDetail}"
                                            HorizontalAlignment="Center" FontSize="11"
                                            Margin="0,4,0,0"
-                                           Foreground="{StaticResource TextMutedBrush}" />
+                                           Foreground="{DynamicResource TextMutedBrush}" />
                             </StackPanel>
                             <Button Grid.Column="2" HorizontalAlignment="Right"
                                     Style="{StaticResource SecondaryButton}"
@@ -354,18 +381,18 @@
                                 Style="{StaticResource CardPremium}" Padding="56,48">
                             <StackPanel HorizontalAlignment="Center">
                                 <Border Width="64" Height="64" CornerRadius="32"
-                                        Background="{StaticResource SurfaceElevatedBrush}"
+                                        Background="{DynamicResource SurfaceElevatedBrush}"
                                         ClipToBounds="True">
                                     <Image Source="/EasySave.WPF;component/Assets/app.png"
                                            Stretch="UniformToFill" />
                                 </Border>
                                 <TextBlock Text="{Binding LblEmptyTitle}"
                                            FontSize="18" FontWeight="SemiBold" Margin="0,16,0,4"
-                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
                                            HorizontalAlignment="Center" />
                                 <TextBlock Text="{Binding LblEmptySubtitle}"
                                            FontSize="13" Margin="0,0,0,20"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                            HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"
                                            TextAlignment="Center" />
                                 <Button Style="{StaticResource PrimaryButton}"
@@ -399,13 +426,13 @@
                                                     <CheckBox Grid.Column="0"
                                                               IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                               VerticalAlignment="Center"
-                                                              Foreground="{StaticResource TextPrimaryBrush}"
+                                                              Foreground="{DynamicResource TextPrimaryBrush}"
                                                               Margin="0,0,12,0" />
 
                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding Name}"
                                                                    FontSize="16" FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                                                    VerticalAlignment="Center" />
                                                         <Border Style="{StaticResource Chip}" Margin="12,0,0,0">
                                                             <StackPanel Orientation="Horizontal">
@@ -413,11 +440,11 @@
                                                                          Fill="{Binding IsFullBackup, Converter={StaticResource BackupTypeToBrush}}"
                                                                          VerticalAlignment="Center" Margin="0,0,8,0" />
                                                                 <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
-                                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                                                            Text="{Binding DataContext.LblFull, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                            Visibility="{Binding IsFullBackup, Converter={StaticResource BoolToVis}}" />
                                                                 <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
-                                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                                                            Text="{Binding DataContext.LblDiff, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                            Visibility="{Binding IsFullBackup, Converter={StaticResource BoolToVisInv}}" />
                                                             </StackPanel>
@@ -466,18 +493,18 @@
                                                     <StackPanel Grid.Column="0" Margin="0,0,12,0">
                                                         <TextBlock Text="{Binding DataContext.LblSource, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                    FontSize="10" FontWeight="Bold"
-                                                                   Foreground="{StaticResource TextMutedBrush}" />
+                                                                   Foreground="{DynamicResource TextMutedBrush}" />
                                                         <TextBlock Text="{Binding Source}"
                                                                    Margin="0,4,0,0" TextTrimming="CharacterEllipsis"
-                                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                                     </StackPanel>
                                                     <StackPanel Grid.Column="1" Margin="12,0,0,0">
                                                         <TextBlock Text="{Binding DataContext.LblDestination, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                    FontSize="10" FontWeight="Bold"
-                                                                   Foreground="{StaticResource TextMutedBrush}" />
+                                                                   Foreground="{DynamicResource TextMutedBrush}" />
                                                         <TextBlock Text="{Binding Destination}"
                                                                    Margin="0,4,0,0" TextTrimming="CharacterEllipsis"
-                                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                                     </StackPanel>
                                                 </Grid>
 
@@ -489,16 +516,16 @@
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock Grid.Column="0">
                                                             <Run Text="{Binding ProcessedFiles, Mode=OneWay}"
-                                                                 Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold" />
-                                                            <Run Text="/" Foreground="{StaticResource TextMutedBrush}" />
+                                                                 Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" />
+                                                            <Run Text="/" Foreground="{DynamicResource TextMutedBrush}" />
                                                             <Run Text="{Binding TotalFiles, Mode=OneWay}"
-                                                                 Foreground="{StaticResource TextSecondaryBrush}" />
-                                                            <Run Text=" • " Foreground="{StaticResource TextMutedBrush}" />
+                                                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                            <Run Text=" • " Foreground="{DynamicResource TextMutedBrush}" />
                                                             <Run Text="{Binding TotalSizeFormatted, Mode=OneWay}"
-                                                                 Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                 Foreground="{DynamicResource TextSecondaryBrush}" />
                                                         </TextBlock>
                                                         <TextBlock Grid.Column="1"
-                                                                   Foreground="{StaticResource AccentBrush}" FontWeight="Bold">
+                                                                   Foreground="{DynamicResource AccentBrush}" FontWeight="Bold">
                                                             <Run Text="{Binding Progression, Mode=OneWay}" />
                                                             <Run Text="%" />
                                                         </TextBlock>
@@ -507,7 +534,7 @@
                                                                  Value="{Binding Progression}" Maximum="100" />
                                                     <TextBlock Text="{Binding CurrentFile}"
                                                                Margin="0,8,0,0" FontSize="11"
-                                                               Foreground="{StaticResource TextMutedBrush}"
+                                                               Foreground="{DynamicResource TextMutedBrush}"
                                                                TextTrimming="CharacterEllipsis" />
                                                 </StackPanel>
                                             </Grid>
@@ -527,11 +554,11 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionDisplay}"
                                            FontSize="12" FontWeight="Bold"
-                                           Foreground="{StaticResource AccentBrush}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            Margin="0,0,0,4" />
                                 <TextBlock Text="{Binding LblSettingsPageSize}"
                                            FontSize="15" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
                                            Margin="0,8,0,0" />
                                 <ComboBox Margin="0,10,0,0"
                                           Style="{StaticResource ModernComboBox}"
@@ -541,7 +568,7 @@
                                 <TextBlock Text="{Binding LblSettingsPageSizeHint}"
                                            TextWrapping="Wrap"
                                            Margin="0,12,0,0" FontSize="13"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                             </StackPanel>
                         </Border>
 
@@ -549,15 +576,15 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionData}"
                                            FontSize="12" FontWeight="Bold"
-                                           Foreground="{StaticResource AccentBrush}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            Margin="0,0,0,4" />
                                 <TextBlock Text="{Binding LblSettingsSectionLogRouting}"
                                            FontSize="11" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                            Margin="0,12,0,4" />
                                 <TextBlock Text="{Binding LblSettingsLogDestination}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,0,0,4" />
                                 <ComboBox Margin="0,0,0,8"
                                           Width="260" HorizontalAlignment="Left"
@@ -566,7 +593,7 @@
                                           SelectedItem="{Binding LogDestination, Mode=TwoWay}" />
                                 <TextBlock Text="{Binding LblSettingsCentralLogUrl}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,0,0,4" />
                                 <TextBox Text="{Binding CentralLogBaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          MinWidth="320" HorizontalAlignment="Stretch"
@@ -575,57 +602,57 @@
                                 <TextBlock Text="{Binding LblSettingsCentralLogHint}"
                                            TextWrapping="Wrap"
                                            Margin="0,0,0,8" FontSize="12"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="Dossier central-logs (Docker)"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,0,0,4" />
-                                <Border Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                         CornerRadius="8" Padding="12,10" Margin="0,0,0,16">
                                     <TextBlock Text="{Binding DisplayCentralLogFolder}"
                                                FontFamily="Consolas"
                                                FontSize="12"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
                                 <TextBlock Text="{Binding LblSettingsDataFolder}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,12,0,4" />
-                                <Border Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                         CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
                                     <TextBlock Text="{Binding DisplayEasyLogFolder}"
                                                FontFamily="Consolas"
                                                FontSize="12"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
                                 <TextBlock Text="{Binding LblSettingsWorksFile}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,0,0,4" />
-                                <Border Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                         CornerRadius="8" Padding="12,10">
                                     <TextBlock Text="{Binding DisplayWorksJsonPath}"
                                                FontFamily="Consolas"
                                                FontSize="12"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
                                 <TextBlock Text="{Binding LblSettingsLogsFile}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,12,0,4" />
-                                <Border Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                         CornerRadius="8" Padding="12,10">
                                     <TextBlock Text="{Binding DisplayLogFilePath}"
                                                FontFamily="Consolas"
                                                FontSize="12"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
                                 <Grid Margin="0,12,0,0">
@@ -645,7 +672,7 @@
                                 </Grid>
                                 <TextBlock Text="{Binding LblSettingsLogsPreview}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,12,0,4" />
                                 <TextBox Text="{Binding LogPreview, Mode=OneWay}"
                                          IsReadOnly="True"
@@ -662,11 +689,11 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionBusinessSoftware}"
                                            FontSize="12" FontWeight="Bold"
-                                           Foreground="{StaticResource AccentBrush}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            Margin="0,0,0,4" />
                                 <TextBlock Text="{Binding LblSettingsBusinessSoftwareLabel}"
                                            FontSize="15" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
                                            Margin="0,8,0,0" />
                                 <Grid Margin="0,10,0,0">
                                     <Grid.ColumnDefinitions>
@@ -694,15 +721,15 @@
                                 </StackPanel>
                                 <TextBlock Text="{Binding LblSettingsBusinessSoftwareList}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,10,0,4" />
-                                <Border Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                         CornerRadius="8" Padding="12,10" Margin="0,2,0,8"
                                         Visibility="{Binding HasBusinessSoftwareConfigured, Converter={StaticResource BoolToVisInv}}">
                                     <TextBlock Text="{Binding LblSettingsBusinessSoftwareEmpty}"
                                                FontSize="12"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
                                 <ItemsControl Margin="0,2,0,8"
@@ -715,8 +742,8 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="{StaticResource SurfaceElevatedBrush}"
-                                                    BorderBrush="{StaticResource BorderBrush}"
+                                            <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
                                                     BorderThickness="1"
                                                     CornerRadius="999"
                                                     Padding="10,6"
@@ -725,7 +752,7 @@
                                                     <TextBlock Text="{Binding}"
                                                                FontFamily="Consolas"
                                                                FontSize="12"
-                                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                                VerticalAlignment="Center" />
                                                     <Button Margin="8,0,0,0"
                                                             Width="24"
@@ -743,7 +770,7 @@
                                 <TextBlock Text="{Binding LblSettingsBusinessSoftwareHint}"
                                            TextWrapping="Wrap"
                                            Margin="0,12,0,0" FontSize="13"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                             </StackPanel>
                         </Border>
 
@@ -751,11 +778,11 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionPriority}"
                                            FontSize="12" FontWeight="Bold"
-                                           Foreground="{StaticResource AccentBrush}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            Margin="0,0,0,4" />
                                 <TextBlock Text="{Binding LblSettingsPriorityExtensions}"
                                            FontSize="15" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
                                            Margin="0,8,0,0" />
                                 <ItemsControl Margin="0,10,0,0"
                                               ItemsSource="{Binding PriorityExtensionOptions}">
@@ -769,13 +796,13 @@
                                             <CheckBox Content="{Binding Extension}"
                                                       IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                       Margin="0,0,16,8"
-                                                      Foreground="{StaticResource TextPrimaryBrush}" />
+                                                      Foreground="{DynamicResource TextPrimaryBrush}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <TextBlock Text="{Binding LblSettingsPriorityAdd}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,8,0,4" />
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -794,21 +821,21 @@
                                 </Grid>
                                 <TextBlock Text="{Binding LblSettingsPrioritySelected}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,10,0,4" />
-                                <Border Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                         CornerRadius="8" Padding="12,10" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding SelectedPriorityExtensionsDisplay}"
                                                FontFamily="Consolas"
                                                FontSize="12"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
                                 <TextBlock Text="{Binding LblSettingsPriorityHint}"
                                            TextWrapping="Wrap"
                                            Margin="0,12,0,0" FontSize="13"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                             </StackPanel>
                         </Border>
 
@@ -816,11 +843,11 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionBandwidth}"
                                            FontSize="12" FontWeight="Bold"
-                                           Foreground="{StaticResource AccentBrush}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            Margin="0,0,0,4" />
                                 <TextBlock Text="{Binding LblSettingsBandwidthThreshold}"
                                            FontSize="15" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
                                            Margin="0,8,0,12" />
 
                                 <Grid>
@@ -832,8 +859,8 @@
 
                                     <!-- Stepper moderne (− valeur +) -->
                                     <Border Grid.Column="0"
-                                            Background="{StaticResource SurfaceElevatedBrush}"
-                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                            Background="{DynamicResource SurfaceElevatedBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                             CornerRadius="10"
                                             Height="44">
                                         <Grid>
@@ -881,20 +908,20 @@
                                     <!-- Résumé visuel -->
                                     <Border Grid.Column="2"
                                             Margin="16,0,0,0"
-                                            Background="{StaticResource SurfaceElevatedBrush}"
-                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                            Background="{DynamicResource SurfaceElevatedBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                             CornerRadius="10" Padding="14,10"
                                             VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="◉"
-                                                       Foreground="{StaticResource AccentBrush}"
+                                                       Foreground="{DynamicResource AccentBrush}"
                                                        VerticalAlignment="Center"
                                                        Margin="0,0,10,0"
                                                        FontSize="14" />
                                             <TextBlock Text="{Binding LargeFileThresholdSummary}"
                                                        VerticalAlignment="Center"
                                                        FontSize="13"
-                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                                        TextWrapping="Wrap" />
                                         </StackPanel>
                                     </Border>
@@ -903,7 +930,7 @@
                                 <TextBlock Text="{Binding LblSettingsBandwidthHint}"
                                            TextWrapping="Wrap"
                                            Margin="0,16,0,0" FontSize="13"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                             </StackPanel>
                         </Border>
 
@@ -911,11 +938,11 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionEncryption}"
                                            FontSize="12" FontWeight="Bold"
-                                           Foreground="{StaticResource AccentBrush}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            Margin="0,0,0,4" />
                                 <TextBlock Text="{Binding LblSettingsEncryptionExtensions}"
                                            FontSize="15" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
                                            Margin="0,8,0,0" />
                                 <ItemsControl Margin="0,10,0,0"
                                               ItemsSource="{Binding EncryptionExtensionOptions}">
@@ -929,13 +956,13 @@
                                             <CheckBox Content="{Binding Extension}"
                                                       IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                       Margin="0,0,16,8"
-                                                      Foreground="{StaticResource TextPrimaryBrush}" />
+                                                      Foreground="{DynamicResource TextPrimaryBrush}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <TextBlock Text="{Binding LblSettingsEncryptionAdd}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,8,0,4" />
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -954,32 +981,32 @@
                                 </Grid>
                                 <TextBlock Text="{Binding LblSettingsEncryptionSelected}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,10,0,4" />
-                                <Border Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                         CornerRadius="8" Padding="12,10" Margin="0,0,0,8">
                                     <TextBlock Text="{Binding SelectedEncryptionExtensionsDisplay}"
                                                FontFamily="Consolas"
                                                FontSize="12"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
                                 <TextBlock Text="{Binding LblSettingsEncryptionHint}"
                                            TextWrapping="Wrap"
                                            Margin="0,12,0,8" FontSize="13"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <TextBlock Text="{Binding LblSettingsCryptoSoftFolder}"
                                            FontSize="12"
-                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,0,0,4" />
-                                <Border Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                <Border Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                         CornerRadius="8" Padding="12,10">
                                     <TextBlock Text="{Binding DisplayCryptoSoftFolder}"
                                                FontFamily="Consolas"
                                                FontSize="12"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
                             </StackPanel>
@@ -989,11 +1016,11 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionAbout}"
                                            FontSize="12" FontWeight="Bold"
-                                           Foreground="{StaticResource AccentBrush}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            Margin="0,0,0,8" />
                                 <TextBlock Text="{Binding LblSettingsAboutBody}"
                                            TextWrapping="Wrap" FontSize="13"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                             </StackPanel>
                         </Border>
                     </StackPanel>

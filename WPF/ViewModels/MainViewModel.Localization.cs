@@ -26,6 +26,11 @@ public partial class MainViewModel
     public string LblHeroTitle => IsFrench ? "Centre de contrôle" : "Control center";
     public string LblSectionMenu => _lang.GetString("wpf_section_menu");
     public string LblSectionLanguage => _lang.GetString("wpf_section_language");
+    public string LblSectionTheme => _lang.GetString("wpf_section_theme");
+    public string LblThemeDark => _lang.GetString("wpf_theme_dark");
+    public string LblThemeLight => _lang.GetString("wpf_theme_light");
+    public string LblSettingsTheme => _lang.GetString("wpf_settings_theme");
+    public string LblSettingsThemeHint => _lang.GetString("wpf_settings_theme_hint");
     public string LblNavWorks => IsFrench ? "Travaux" : "Jobs";
     public string LblNavSettings => IsFrench ? "Paramètres" : "Settings";
     public string LblHeader => IsFrench ? "Mes travaux de sauvegarde" : "My backup jobs";
@@ -116,7 +121,10 @@ public partial class MainViewModel
         string[] labels =
         [
             nameof(LblAppSubtitle), nameof(LblVersionBadge), nameof(LblHeroTitle),
-            nameof(LblSectionMenu), nameof(LblSectionLanguage), nameof(LblSectionLogFormat),
+            nameof(LblSectionMenu), nameof(LblSectionLanguage), nameof(LblSectionTheme),
+            nameof(LblThemeDark), nameof(LblThemeLight), nameof(LblSettingsTheme), nameof(LblSettingsThemeHint),
+            nameof(ThemeToggleGlyph), nameof(ThemeToggleToolTip),
+            nameof(LblSectionLogFormat),
             nameof(LblLogJson), nameof(LblLogXml), nameof(LblNavWorks), nameof(LblNavSettings), nameof(LblHeader),
             nameof(LblCount), nameof(LblPrimaryHeader), nameof(LblPrimarySubtitle), nameof(LblNew),
             nameof(LblRunSelected), nameof(LblRunAll), nameof(LblEmptyTitle), nameof(LblEmptySubtitle),

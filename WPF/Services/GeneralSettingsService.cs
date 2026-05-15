@@ -58,4 +58,7 @@ public sealed class GeneralSettings
 
     /// <summary>URL du service LogCentral (ex. http://localhost:5088)</summary>
     public string CentralLogBaseUrl { get; set; } = "http://localhost:5088";
+
+    /// <summary>Dark | Light</summary>
+    public string AppTheme { get; set; } = "Dark";
 }

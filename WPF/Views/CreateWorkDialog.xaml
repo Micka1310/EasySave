@@ -16,8 +16,8 @@
         <h:InverseBooleanConverter x:Key="InvBool" />
     </Window.Resources>
 
-    <Border Background="{StaticResource BackgroundBrush}"
-            BorderBrush="{StaticResource BorderBrush}"
+    <Border Background="{DynamicResource BackgroundBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="1" CornerRadius="16" Margin="12">
         <Border.Effect>
             <DropShadowEffect BlurRadius="32" Color="Black" Opacity="0.6" ShadowDepth="0" />
@@ -42,7 +42,7 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding Tag.LblDialogTitle, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=EasySave}"
                                FontSize="22" FontWeight="Bold"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
                 <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="✕"
                         Command="{Binding CancelCommand}" />
@@ -52,7 +52,7 @@
             <StackPanel Grid.Row="1" Margin="0,0,0,16">
                 <TextBlock Text="{Binding Tag.LblFieldName, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Nom}"
                            FontSize="11" FontWeight="Bold" Margin="0,0,0,6"
-                           Foreground="{StaticResource TextMutedBrush}" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBox Style="{StaticResource ModernTextBox}"
                          Text="{Binding WorkName, UpdateSourceTrigger=PropertyChanged}" />
             </StackPanel>
@@ -61,7 +61,7 @@
             <StackPanel Grid.Row="2" Margin="0,0,0,16">
                 <TextBlock Text="{Binding Tag.LblFieldSource, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Source}"
                            FontSize="11" FontWeight="Bold" Margin="0,0,0,6"
-                           Foreground="{StaticResource TextMutedBrush}" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -80,7 +80,7 @@
             <StackPanel Grid.Row="3" Margin="0,0,0,16">
                 <TextBlock Text="{Binding Tag.LblFieldDestination, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Destination}"
                            FontSize="11" FontWeight="Bold" Margin="0,0,0,6"
-                           Foreground="{StaticResource TextMutedBrush}" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -99,7 +99,7 @@
             <StackPanel Grid.Row="4" Margin="0,0,0,20">
                 <TextBlock Text="{Binding Tag.LblFieldType, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue=Type}"
                            FontSize="11" FontWeight="Bold" Margin="0,0,0,6"
-                           Foreground="{StaticResource TextMutedBrush}" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -112,26 +112,26 @@
                         <RadioButton.Template>
                             <ControlTemplate TargetType="RadioButton">
                                 <Border x:Name="Bd"
-                                        Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}"
+                                        Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="14">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Tag.LblBackupFullTitle, RelativeSource={RelativeSource AncestorType=Window}}"
                                                    FontWeight="SemiBold" FontSize="13"
-                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                         <TextBlock Text="{Binding Tag.LblBackupFullDesc, RelativeSource={RelativeSource AncestorType=Window}}"
                                                    FontSize="11" Margin="0,4,0,0"
                                                    TextWrapping="Wrap"
-                                                   Foreground="{StaticResource TextMutedBrush}" />
+                                                   Foreground="{DynamicResource TextMutedBrush}" />
                                     </StackPanel>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsChecked" Value="True">
-                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
                                     </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentSoftBrush}" />
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentSoftBrush}" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -144,26 +144,26 @@
                         <RadioButton.Template>
                             <ControlTemplate TargetType="RadioButton">
                                 <Border x:Name="Bd"
-                                        Background="{StaticResource SurfaceElevatedBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}"
+                                        Background="{DynamicResource SurfaceElevatedBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="14">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Tag.LblBackupDiffTitle, RelativeSource={RelativeSource AncestorType=Window}}"
                                                    FontWeight="SemiBold" FontSize="13"
-                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                         <TextBlock Text="{Binding Tag.LblBackupDiffDesc, RelativeSource={RelativeSource AncestorType=Window}}"
                                                    FontSize="11" Margin="0,4,0,0"
                                                    TextWrapping="Wrap"
-                                                   Foreground="{StaticResource TextMutedBrush}" />
+                                                   Foreground="{DynamicResource TextMutedBrush}" />
                                     </StackPanel>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsChecked" Value="True">
-                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource SecondaryAccentBrush}" />
-                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource SecondaryAccentBrush}" />
+                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
                                     </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentSoftBrush}" />
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentSoftBrush}" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -176,13 +176,13 @@
             <Border Grid.Row="5" Margin="0,0,0,16"
                     Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"
                     Background="#3B2330"
-                    BorderBrush="{StaticResource ErrorBrush}"
+                    BorderBrush="{DynamicResource ErrorBrush}"
                     BorderThickness="1" CornerRadius="8" Padding="12,10">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="⚠" Foreground="{StaticResource ErrorBrush}"
+                    <TextBlock Text="⚠" Foreground="{DynamicResource ErrorBrush}"
                                FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" />
                     <TextBlock Text="{Binding ErrorMessage}"
-                               Foreground="{StaticResource ErrorBrush}"
+                               Foreground="{DynamicResource ErrorBrush}"
                                TextWrapping="Wrap" VerticalAlignment="Center" />
                 </StackPanel>
             </Border>

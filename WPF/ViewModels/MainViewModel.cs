@@ -156,6 +156,8 @@ public partial class MainViewModel : ViewModelBase
         _lang = Language.GetInstance();
         _isFrench = _lang.GetCurrentLanguage() == Lang.FR;
         _settings = _generalSettingsService.Load();
+        InitializeThemeFromSettings();
+        InitializeThemeCommands();
 
         InitializeBusinessSoftware();
         InitializeLogFormatFromSettings();
