@@ -6,7 +6,8 @@
         Title="EasySave v3"
         Icon="/EasySave.WPF;component/Assets/app.png"
         Height="820" Width="1320"
-        MinHeight="600" MinWidth="1000"
+        MinHeight="520" MinWidth="880"
+        SizeToContent="Manual"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
         Style="{StaticResource AppWindow}">
@@ -20,11 +21,12 @@
         <h:StatusToBrushConverter x:Key="StatusToBrush" />
         <h:BannerKindToBrushConverter x:Key="BannerKindToBrush" />
         <h:BackupTypeToBrushConverter x:Key="BackupTypeToBrush" />
+        <h:WidthLessThanConverter x:Key="WidthLessThan" />
     </Window.Resources>
 
     <Grid Background="{DynamicResource MainCanvasGradientBrush}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="292" />
+            <ColumnDefinition Width="240" MinWidth="200" MaxWidth="280" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -70,7 +72,8 @@
                             </StackPanel>
                             <TextBlock Text="{Binding LblAppSubtitle}"
                                        FontSize="11" Margin="0,4,0,0"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </StackPanel>
                     <Button Grid.Column="1" Style="{StaticResource ThemeToggleButton}"
@@ -96,29 +99,32 @@
                     </Button>
                 </Grid>
 
-                <!-- Menu navigation -->
-                <StackPanel Grid.Row="1" Margin="0,8,0,0">
-                    <TextBlock Text="{Binding LblSectionMenu}" FontSize="10" FontWeight="Bold" Margin="32,12,0,8"
-                               Foreground="{DynamicResource TextMutedBrush}" />
+                <!-- Menu (scroll si fenêtre basse) -->
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="0,8,0,8">
+                        <TextBlock Text="{Binding LblSectionMenu}" FontSize="10" FontWeight="Bold" Margin="32,12,0,8"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                        <RadioButton Style="{StaticResource SidebarItem}" GroupName="Nav"
+                                     IsChecked="{Binding ShowWorksPanel, Mode=TwoWay}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="▤" FontSize="14" Width="20" />
+                                <TextBlock Text="{Binding LblNavWorks}" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource SidebarItem}" GroupName="Nav"
+                                     IsChecked="{Binding ShowWorksPanel, Converter={StaticResource InvBool}, Mode=TwoWay}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚙" FontSize="14" Width="20" />
+                                <TextBlock Text="{Binding LblNavSettings}" />
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                </ScrollViewer>
 
-                    <RadioButton Style="{StaticResource SidebarItem}" GroupName="Nav"
-                                 IsChecked="{Binding ShowWorksPanel, Mode=TwoWay}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="▤" FontSize="14" Width="20" />
-                            <TextBlock Text="{Binding LblNavWorks}" />
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton Style="{StaticResource SidebarItem}" GroupName="Nav"
-                                 IsChecked="{Binding ShowWorksPanel, Converter={StaticResource InvBool}, Mode=TwoWay}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚙" FontSize="14" Width="20" />
-                            <TextBlock Text="{Binding LblNavSettings}" />
-                        </StackPanel>
-                    </RadioButton>
-                </StackPanel>
-
-                <!-- Toggle langue + version -->
-                <StackPanel Grid.Row="2" Margin="20,0,20,24">
+                <!-- Journaux + langue : ancrés en bas de la sidebar -->
+                <StackPanel Grid.Row="2" Margin="20,0,20,24" VerticalAlignment="Bottom">
                     <Border Style="{StaticResource Card}" Padding="14" CornerRadius="10"
                             Background="{DynamicResource SurfaceElevatedBrush}"
                             Margin="0,0,0,10">
@@ -182,70 +188,51 @@
             </Grid.RowDefinitions>
 
             <!-- Hero -->
-            <Border Grid.Row="0" Margin="28,28,28,10"
+            <Border Grid.Row="0" Margin="20,20,20,10"
                     Background="{DynamicResource HeroGradientBrush}"
                     CornerRadius="22"
-                    Padding="28,24"
+                    Padding="20,18"
                     BorderBrush="{DynamicResource BorderGlowBrush}"
                     BorderThickness="1">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="40" ShadowDepth="0" Color="#6EE7FF" Opacity="0.12" />
                 </Border.Effect>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="{Binding LblHeroTitle}"
-                                   Style="{StaticResource SectionTitle}" />
-                        <TextBlock Text="EasySave"
-                                   FontSize="32" FontWeight="Bold" Margin="0,6,0,0"
-                                   Foreground="{DynamicResource TextPrimaryBrush}">
-                            <TextBlock.Effect>
-                                <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#6EE7FF" Opacity="0.2" />
-                            </TextBlock.Effect>
-                        </TextBlock>
-                        <TextBlock Text="{Binding LblAppSubtitle}"
-                                   Margin="0,8,0,0" FontSize="14"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <Border Style="{StaticResource VersionBadge}" Margin="0,0,0,10" HorizontalAlignment="Right">
+                <StackPanel>
+                    <TextBlock Text="{Binding LblHeroTitle}"
+                               Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="EasySave"
+                               FontSize="32" FontWeight="Bold" Margin="0,6,0,0"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               TextWrapping="Wrap">
+                        <TextBlock.Effect>
+                            <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#6EE7FF" Opacity="0.2" />
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <TextBlock Text="{Binding LblAppSubtitle}"
+                               Margin="0,8,0,0" FontSize="14"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <WrapPanel Margin="0,14,0,0" HorizontalAlignment="Right">
+                        <Border Style="{StaticResource VersionBadge}" Margin="0,0,10,0" VerticalAlignment="Center">
                             <TextBlock Text="{Binding LblVersionBadge}" FontWeight="Bold" FontSize="11"
                                        Foreground="{DynamicResource AccentBrush}" />
                         </Border>
                         <Border Background="#33000000" CornerRadius="999"
                                 BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
-                                Padding="18,10">
+                                Padding="18,10" VerticalAlignment="Center">
                             <TextBlock Text="{Binding LblCount}"
                                        FontWeight="Bold" FontSize="14"
                                        Foreground="{DynamicResource AccentBrush}" />
                         </Border>
-                    </StackPanel>
-                </Grid>
+                    </WrapPanel>
+                </StackPanel>
             </Border>
 
             <!-- Header (titre + actions) -->
-            <Grid Grid.Row="1" Margin="32,16,32,16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="{Binding LblPrimaryHeader}"
-                               FontSize="28" FontWeight="Bold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="{Binding LblPrimarySubtitle}"
-                               FontSize="13" Margin="0,4,0,0"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <StackPanel.Style>
-                        <Style TargetType="StackPanel">
+            <DockPanel Grid.Row="1" Margin="20,12,20,12" LastChildFill="True">
+                <WrapPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <WrapPanel.Style>
+                        <Style TargetType="WrapPanel">
                             <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding ShowWorksPanel}" Value="False">
@@ -253,36 +240,33 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </StackPanel.Style>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Style="{StaticResource SecondaryButton}"
-                                Command="{Binding RunSelectedCommand}"
-                                Margin="0,0,8,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="▶" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding LblRunSelected}" />
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource SecondaryButton}"
-                                Command="{Binding RunAllCommand}"
-                                Margin="0,0,8,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="⏵⏵" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding LblRunAll}" />
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource PrimaryButton}"
-                                Command="{Binding CreateWorkCommand}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="+" FontSize="16" FontWeight="Bold"
-                                           Margin="0,0,8,0" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding LblNew}" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-
-                    <!-- Contrôles globaux temps réel (visibles pendant l'exécution) -->
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0"
+                    </WrapPanel.Style>
+                    <Button Style="{StaticResource SecondaryButton}"
+                            Command="{Binding RunSelectedCommand}"
+                            Margin="0,0,8,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="▶" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding LblRunSelected}" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource SecondaryButton}"
+                            Command="{Binding RunAllCommand}"
+                            Margin="0,0,8,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⏵⏵" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding LblRunAll}" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource PrimaryButton}"
+                            Command="{Binding CreateWorkCommand}"
+                            Margin="0,0,8,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="+" FontSize="16" FontWeight="Bold"
+                                       Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding LblNew}" />
+                        </StackPanel>
+                    </Button>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8"
                                 Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
                         <Button Style="{StaticResource SecondaryButton}"
                                 Command="{Binding PauseAllCommand}"
@@ -303,11 +287,21 @@
                             <TextBlock Text="⏹" FontSize="13" Foreground="#E74C3C" />
                         </Button>
                     </StackPanel>
+                </WrapPanel>
+                <StackPanel MinWidth="160" Margin="0,0,12,0">
+                    <TextBlock Text="{Binding LblPrimaryHeader}"
+                               FontSize="28" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding LblPrimarySubtitle}"
+                               FontSize="13" Margin="0,4,0,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" />
                 </StackPanel>
-            </Grid>
+            </DockPanel>
 
             <!-- Banner de statut -->
-            <Border Grid.Row="2" Margin="32,0,32,16"
+            <Border Grid.Row="2" Margin="20,0,20,12"
                     Visibility="{Binding HasStatusBanner, Converter={StaticResource BoolToVis}}"
                     Background="{DynamicResource SurfaceBrush}"
                     BorderBrush="{Binding StatusBannerKind, Converter={StaticResource BannerKindToBrush}}"
@@ -331,7 +325,7 @@
             </Border>
 
             <!-- Travaux (liste + pagination) ou Paramètres -->
-            <Grid Grid.Row="3" Margin="32,0,32,32">
+            <Grid Grid.Row="3" Margin="20,0,20,20">
                 <!-- ——— Vue travaux ——— -->
                 <Grid Visibility="{Binding ShowWorksPanel, Converter={StaticResource BoolToVis}}">
                     <Grid.RowDefinitions>
@@ -402,6 +396,7 @@
 
                         <!-- Liste paginée -->
                         <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled"
                                       Visibility="{Binding Works.Count, Converter={StaticResource CountToVisHide}}">
                             <ItemsControl ItemsSource="{Binding PagedWorks}">
                                 <ItemsControl.ItemTemplate>
@@ -412,83 +407,84 @@
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
 
                                                 <Grid Grid.Row="0">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
-
                                                     <CheckBox Grid.Column="0"
                                                               IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                              VerticalAlignment="Center"
+                                                              VerticalAlignment="Top"
                                                               Foreground="{DynamicResource TextPrimaryBrush}"
-                                                              Margin="0,0,12,0" />
-
-                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Name}"
-                                                                   FontSize="16" FontWeight="SemiBold"
-                                                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                                                   VerticalAlignment="Center" />
-                                                        <Border Style="{StaticResource Chip}" Margin="12,0,0,0">
-                                                            <StackPanel Orientation="Horizontal">
-                                                                <Ellipse Width="6" Height="6"
-                                                                         Fill="{Binding IsFullBackup, Converter={StaticResource BackupTypeToBrush}}"
-                                                                         VerticalAlignment="Center" Margin="0,0,8,0" />
-                                                                <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
-                                                                           Foreground="{DynamicResource TextSecondaryBrush}"
-                                                                           Text="{Binding DataContext.LblFull, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                           Visibility="{Binding IsFullBackup, Converter={StaticResource BoolToVis}}" />
-                                                                <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
-                                                                           Foreground="{DynamicResource TextSecondaryBrush}"
-                                                                           Text="{Binding DataContext.LblDiff, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                           Visibility="{Binding IsFullBackup, Converter={StaticResource BoolToVisInv}}" />
-                                                            </StackPanel>
-                                                        </Border>
-                                                        <Border Style="{StaticResource Chip}" Margin="8,0,0,0">
-                                                            <TextBlock Text="{Binding StatusDisplay}"
-                                                                       FontSize="11" FontWeight="SemiBold"
-                                                                       Foreground="{Binding StatusKey, Converter={StaticResource StatusToBrush}}" />
-                                                        </Border>
-                                                    </StackPanel>
-
-                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <!-- Boutons temps réel par travail -->
-                                                        <Button Style="{StaticResource IconButton}"
-                                                                Content="⏸"
-                                                                Command="{Binding PauseCommand}"
-                                                                ToolTip="{Binding DataContext.LblPause, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                Visibility="{Binding CanPause, Converter={StaticResource BoolToVis}}"
-                                                                Margin="0,0,4,0" />
-                                                        <Button Style="{StaticResource IconButton}"
-                                                                Content="▶"
-                                                                Command="{Binding ResumeCommand}"
-                                                                ToolTip="{Binding DataContext.LblResume, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                Visibility="{Binding CanResume, Converter={StaticResource BoolToVis}}"
-                                                                Margin="0,0,4,0" />
-                                                        <Button Style="{StaticResource IconButton}"
-                                                                Content="⏹"
-                                                                Command="{Binding StopCommand}"
-                                                                ToolTip="{Binding DataContext.LblStop, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                Visibility="{Binding CanStop, Converter={StaticResource BoolToVis}}"
-                                                                Margin="0,0,8,0" />
-                                                        <Button Style="{StaticResource IconButton}"
-                                                                Content="🗑"
-                                                                Command="{Binding DataContext.DeleteWorkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                CommandParameter="{Binding}"
-                                                                ToolTip="{Binding DataContext.LblDelete, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                                    </StackPanel>
+                                                              Margin="0,2,12,0" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Name}"
+                                                               FontSize="16" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               TextWrapping="NoWrap" />
                                                 </Grid>
 
-                                                <Grid Grid.Row="1" Margin="0,16,0,0">
+                                                <WrapPanel Grid.Row="1" Margin="28,8,0,0">
+                                                    <Border Style="{StaticResource Chip}" Margin="0,0,8,6">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Ellipse Width="6" Height="6"
+                                                                     Fill="{Binding IsFullBackup, Converter={StaticResource BackupTypeToBrush}}"
+                                                                     VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                            <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                       Text="{Binding DataContext.LblFull, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                       Visibility="{Binding IsFullBackup, Converter={StaticResource BoolToVis}}" />
+                                                            <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                       Text="{Binding DataContext.LblDiff, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                       Visibility="{Binding IsFullBackup, Converter={StaticResource BoolToVisInv}}" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                    <Border Style="{StaticResource Chip}" Margin="0,0,8,6">
+                                                        <TextBlock Text="{Binding StatusDisplay}"
+                                                                   FontSize="11" FontWeight="SemiBold"
+                                                                   Foreground="{Binding StatusKey, Converter={StaticResource StatusToBrush}}" />
+                                                    </Border>
+                                                </WrapPanel>
+
+                                                <WrapPanel Grid.Row="2" Margin="28,0,0,0" HorizontalAlignment="Right">
+                                                    <Button Style="{StaticResource IconButton}"
+                                                            Content="⏸"
+                                                            Command="{Binding PauseCommand}"
+                                                            ToolTip="{Binding DataContext.LblPause, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Visibility="{Binding CanPause, Converter={StaticResource BoolToVis}}"
+                                                            Margin="0,0,4,4" />
+                                                    <Button Style="{StaticResource IconButton}"
+                                                            Content="▶"
+                                                            Command="{Binding ResumeCommand}"
+                                                            ToolTip="{Binding DataContext.LblResume, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Visibility="{Binding CanResume, Converter={StaticResource BoolToVis}}"
+                                                            Margin="0,0,4,4" />
+                                                    <Button Style="{StaticResource IconButton}"
+                                                            Content="⏹"
+                                                            Command="{Binding StopCommand}"
+                                                            ToolTip="{Binding DataContext.LblStop, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Visibility="{Binding CanStop, Converter={StaticResource BoolToVis}}"
+                                                            Margin="0,0,4,4" />
+                                                    <Button Style="{StaticResource IconButton}"
+                                                            Content="🗑"
+                                                            Command="{Binding DataContext.DeleteWorkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip="{Binding DataContext.LblDelete, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Margin="0,0,0,4" />
+                                                </WrapPanel>
+
+                                                <Grid Grid.Row="3" Margin="0,12,0,0">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" MinWidth="120" />
+                                                        <ColumnDefinition Width="*" MinWidth="120" />
                                                     </Grid.ColumnDefinitions>
 
-                                                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
                                                         <TextBlock Text="{Binding DataContext.LblSource, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                    FontSize="10" FontWeight="Bold"
                                                                    Foreground="{DynamicResource TextMutedBrush}" />
@@ -496,7 +492,7 @@
                                                                    Margin="0,4,0,0" TextTrimming="CharacterEllipsis"
                                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                                                     </StackPanel>
-                                                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
                                                         <TextBlock Text="{Binding DataContext.LblDestination, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                    FontSize="10" FontWeight="Bold"
                                                                    Foreground="{DynamicResource TextMutedBrush}" />
@@ -506,7 +502,7 @@
                                                     </StackPanel>
                                                 </Grid>
 
-                                                <StackPanel Grid.Row="2" Margin="0,16,0,0">
+                                                <StackPanel Grid.Row="4" Margin="0,16,0,0">
                                                     <Grid Margin="0,0,0,8">
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*" />
@@ -546,8 +542,9 @@
 
                 <!-- ——— Vue paramètres ——— -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
                               Visibility="{Binding ShowSettingsPanel, Converter={StaticResource BoolToVis}}">
-                    <StackPanel MaxWidth="980" HorizontalAlignment="Center">
+                    <StackPanel MaxWidth="980" HorizontalAlignment="Stretch" Margin="0,0,4,0">
                         <Border Style="{StaticResource Card}" Margin="0,0,0,16" Padding="24">
                             <StackPanel>
                                 <TextBlock Text="{Binding LblSettingsSectionDisplay}"
@@ -560,7 +557,7 @@
                                            Margin="0,8,0,0" />
                                 <ComboBox Margin="0,10,0,0"
                                           Style="{StaticResource ModernComboBox}"
-                                          Width="140" HorizontalAlignment="Left"
+                                          MaxWidth="200" HorizontalAlignment="Left"
                                           ItemsSource="{Binding PageSizeChoices}"
                                           SelectedItem="{Binding PageSize, Mode=TwoWay}" />
                                 <TextBlock Text="{Binding LblSettingsPageSizeHint}"
@@ -585,7 +582,7 @@
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,0,0,4" />
                                 <ComboBox Margin="0,0,0,8"
-                                          Width="260" HorizontalAlignment="Left"
+                                          HorizontalAlignment="Stretch" MaxWidth="480"
                                           Style="{StaticResource ModernComboBox}"
                                           ItemsSource="{Binding LogDestinationChoices}"
                                           SelectedItem="{Binding LogDestination, Mode=TwoWay}" />
@@ -594,7 +591,7 @@
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            Margin="0,0,0,4" />
                                 <TextBox Text="{Binding CentralLogBaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         MinWidth="320" HorizontalAlignment="Stretch"
+                                         HorizontalAlignment="Stretch"
                                          Margin="0,0,0,8"
                                          Style="{StaticResource ModernTextBox}" />
                                 <TextBlock Text="{Binding LblSettingsCentralLogHint}"
@@ -653,21 +650,16 @@
                                                Foreground="{DynamicResource TextPrimaryBrush}"
                                                TextWrapping="Wrap" />
                                 </Border>
-                                <Grid Margin="0,12,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0"
-                                            Style="{StaticResource SecondaryButton}"
+                                <WrapPanel Margin="0,12,0,0" Orientation="Horizontal">
+                                    <Button Style="{StaticResource SecondaryButton}"
                                             Command="{Binding RefreshLogsCommand}"
-                                            Content="{Binding LblSettingsLogsRefresh}" />
-                                    <Button Grid.Column="1"
-                                            Style="{StaticResource SecondaryButton}"
-                                            Margin="8,0,0,0"
+                                            Content="{Binding LblSettingsLogsRefresh}"
+                                            Margin="0,0,8,8" />
+                                    <Button Style="{StaticResource SecondaryButton}"
                                             Command="{Binding OpenLogsFolderCommand}"
-                                            Content="{Binding LblSettingsOpenLogsFolder}" />
-                                </Grid>
+                                            Content="{Binding LblSettingsOpenLogsFolder}"
+                                            Margin="0,0,8,8" />
+                                </WrapPanel>
                                 <TextBlock Text="{Binding LblSettingsLogsPreview}"
                                            FontSize="12"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -699,7 +691,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0"
-                                             MinWidth="260"
+                                             MinWidth="0"
                                              Margin="0,0,8,0"
                                              Padding="10,8"
                                              Text="{Binding CustomBusinessSoftwareInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -708,15 +700,16 @@
                                             Command="{Binding AddBusinessSoftwareCommand}"
                                             Content="{Binding LblSettingsBusinessSoftwareAddButton}" />
                                 </Grid>
-                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <WrapPanel Margin="0,10,0,0" Orientation="Horizontal">
                                     <Button Style="{StaticResource SecondaryButton}"
                                             Command="{Binding ResetBusinessSoftwareDefaultsCommand}"
-                                            Content="{Binding LblSettingsBusinessSoftwareResetDefaults}" />
+                                            Content="{Binding LblSettingsBusinessSoftwareResetDefaults}"
+                                            Margin="0,0,8,8" />
                                     <Button Style="{StaticResource DangerButton}"
-                                            Margin="8,0,0,0"
                                             Command="{Binding ClearBusinessSoftwareCommand}"
-                                            Content="{Binding LblSettingsBusinessSoftwareClearAll}" />
-                                </StackPanel>
+                                            Content="{Binding LblSettingsBusinessSoftwareClearAll}"
+                                            Margin="0,0,8,8" />
+                                </WrapPanel>
                                 <TextBlock Text="{Binding LblSettingsBusinessSoftwareList}"
                                            FontSize="12"
                                            Foreground="{DynamicResource TextMutedBrush}"
@@ -808,7 +801,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0"
-                                             MinWidth="260"
+                                             MinWidth="0"
                                              Margin="0,0,8,0"
                                              Padding="10,8"
                                              Text="{Binding CustomPriorityExtensionInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -848,15 +841,9 @@
                                            Foreground="{DynamicResource TextPrimaryBrush}"
                                            Margin="0,8,0,12" />
 
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-
+                                <WrapPanel Orientation="Horizontal">
                                     <!-- Stepper moderne (− valeur +) -->
-                                    <Border Grid.Column="0"
+                                    <Border Margin="0,0,12,12"
                                             Background="{DynamicResource SurfaceElevatedBrush}"
                                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                             CornerRadius="10"
@@ -864,7 +851,7 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="40" />
-                                                <ColumnDefinition Width="140" />
+                                                <ColumnDefinition Width="100" MinWidth="72" />
                                                 <ColumnDefinition Width="40" />
                                             </Grid.ColumnDefinitions>
 
@@ -894,9 +881,8 @@
                                     </Border>
 
                                     <!-- ComboBox unité (Ko / Mo / Go) -->
-                                    <ComboBox Grid.Column="1"
-                                              Margin="12,0,0,0"
-                                              Width="120" Height="44"
+                                    <ComboBox Margin="0,0,12,12"
+                                              MinWidth="100" MaxWidth="140" Height="44"
                                               Style="{StaticResource ModernComboBox}"
                                               ItemsSource="{Binding LargeFileThresholdUnits}"
                                               DisplayMemberPath="Label"
@@ -904,12 +890,12 @@
                                               VerticalAlignment="Center" />
 
                                     <!-- Résumé visuel -->
-                                    <Border Grid.Column="2"
-                                            Margin="16,0,0,0"
+                                    <Border Margin="0,0,0,12"
                                             Background="{DynamicResource SurfaceElevatedBrush}"
                                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                             CornerRadius="10" Padding="14,10"
-                                            VerticalAlignment="Center">
+                                            VerticalAlignment="Center"
+                                            MinWidth="200">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="◉"
                                                        Foreground="{DynamicResource AccentBrush}"
@@ -923,7 +909,7 @@
                                                        TextWrapping="Wrap" />
                                         </StackPanel>
                                     </Border>
-                                </Grid>
+                                </WrapPanel>
 
                                 <TextBlock Text="{Binding LblSettingsBandwidthHint}"
                                            TextWrapping="Wrap"

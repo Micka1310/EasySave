@@ -86,6 +86,22 @@ public class BannerKindToBrushConverter : IValueConverter
 }
 
 /// <summary>"1" / "2" -> chip color : full=accent, diff=secondary accent.</summary>
+/// <summary>Vrai si la largeur (double) est inférieure au seuil (ConverterParameter, ex. 1050).</summary>
+public class WidthLessThanConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not double width) return false;
+        double threshold = 1050;
+        if (parameter is string s && double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out double t))
+            threshold = t;
+        return width < threshold;
+    }
+
+    public object ConvertBack(object value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 public class BackupTypeToBrushConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object? parameter, CultureInfo culture)
