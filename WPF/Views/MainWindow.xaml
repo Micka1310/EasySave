@@ -530,6 +530,44 @@
                                            FontSize="12" FontWeight="Bold"
                                            Foreground="{StaticResource AccentBrush}"
                                            Margin="0,0,0,4" />
+                                <TextBlock Text="{Binding LblSettingsSectionLogRouting}"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Margin="0,12,0,4" />
+                                <TextBlock Text="{Binding LblSettingsLogDestination}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,0,0,4" />
+                                <ComboBox Margin="0,0,0,8"
+                                          Width="260" HorizontalAlignment="Left"
+                                          Style="{StaticResource ModernComboBox}"
+                                          ItemsSource="{Binding LogDestinationChoices}"
+                                          SelectedItem="{Binding LogDestination, Mode=TwoWay}" />
+                                <TextBlock Text="{Binding LblSettingsCentralLogUrl}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,0,0,4" />
+                                <TextBox Text="{Binding CentralLogBaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         MinWidth="320" HorizontalAlignment="Stretch"
+                                         Margin="0,0,0,8"
+                                         Style="{StaticResource ModernTextBox}" />
+                                <TextBlock Text="{Binding LblSettingsCentralLogHint}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,8" FontSize="12"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                <TextBlock Text="Dossier central-logs (Docker)"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           Margin="0,0,0,4" />
+                                <Border Background="{StaticResource SurfaceElevatedBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                        CornerRadius="8" Padding="12,10" Margin="0,0,0,16">
+                                    <TextBlock Text="{Binding DisplayCentralLogFolder}"
+                                               FontFamily="Consolas"
+                                               FontSize="12"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               TextWrapping="Wrap" />
+                                </Border>
                                 <TextBlock Text="{Binding LblSettingsDataFolder}"
                                            FontSize="12"
                                            Foreground="{StaticResource TextMutedBrush}"

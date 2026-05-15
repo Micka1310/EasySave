@@ -159,6 +159,7 @@ public partial class MainViewModel : ViewModelBase
 
         InitializeBusinessSoftware();
         InitializeLogFormatFromSettings();
+        InitializeLogRoutingFromSettings();
         InitializeEncryptionExtensions();
         InitializePriorityExtensions();
         InitializeLargeFileThresholdFromSettings();

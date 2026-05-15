@@ -52,4 +52,10 @@ public sealed class GeneralSettings
     // canonique reste LargeFileThresholdKB ; cette unité n'est qu'un détail
     // d'affichage pour ne pas perdre la préférence utilisateur.
     public string LargeFileThresholdUnit { get; set; } = "KB";
+
+    /// <summary>Local | Central | Both</summary>
+    public string LogDestination { get; set; } = "Local";
+
+    /// <summary>URL du service LogCentral (ex. http://localhost:5088)</summary>
+    public string CentralLogBaseUrl { get; set; } = "http://localhost:5088";
 }

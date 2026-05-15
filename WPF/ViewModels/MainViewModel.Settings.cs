@@ -41,6 +41,91 @@ public partial class MainViewModel
         }
     }
 
+    public string[] LogDestinationChoices { get; } = ["Local", "Central", "Both"];
+
+    private string _logDestination = "Local";
+    public string LogDestination
+    {
+        get => _logDestination;
+        set
+        {
+            string v = (value ?? "Local").Trim();
+            if (v is not ("Local" or "Central" or "Both"))
+                v = "Local";
+            if (!SetField(ref _logDestination, v)) return;
+            _settings.LogDestination = v;
+            EnsureCentralUrlSavedIfNeeded();
+            _generalSettingsService.Save(_settings);
+            RefreshLogPreview();
+        }
+    }
+
+    private const string DefaultCentralLogUrl = "http://localhost:5088";
+
+    private string _centralLogBaseUrl = DefaultCentralLogUrl;
+    public string CentralLogBaseUrl
+    {
+        get => _centralLogBaseUrl;
+        set
+        {
+            if (!SetField(ref _centralLogBaseUrl, value ?? "")) return;
+            _settings.CentralLogBaseUrl = string.IsNullOrWhiteSpace(_centralLogBaseUrl)
+                ? DefaultCentralLogUrl
+                : _centralLogBaseUrl.Trim();
+            _centralLogBaseUrl = _settings.CentralLogBaseUrl;
+            OnPropertyChanged(nameof(CentralLogBaseUrl));
+            _generalSettingsService.Save(_settings);
+        }
+    }
+
+    private void InitializeLogRoutingFromSettings()
+    {
+        string d = (_settings.LogDestination ?? "Local").Trim();
+        if (d is not ("Local" or "Central" or "Both"))
+            d = "Local";
+        _logDestination = d;
+        _centralLogBaseUrl = string.IsNullOrWhiteSpace(_settings.CentralLogBaseUrl)
+            ? DefaultCentralLogUrl
+            : _settings.CentralLogBaseUrl.Trim();
+        EnsureCentralUrlSavedIfNeeded();
+        _generalSettingsService.Save(_settings);
+        OnPropertyChanged(nameof(LogDestination));
+        OnPropertyChanged(nameof(CentralLogBaseUrl));
+        OnPropertyChanged(nameof(DisplayCentralLogFolder));
+    }
+
+    private void EnsureCentralUrlSavedIfNeeded()
+    {
+        if (_logDestination is not ("Central" or "Both"))
+            return;
+        if (!string.IsNullOrWhiteSpace(_settings.CentralLogBaseUrl))
+            return;
+
+        _settings.CentralLogBaseUrl = DefaultCentralLogUrl;
+        _centralLogBaseUrl = DefaultCentralLogUrl;
+        OnPropertyChanged(nameof(CentralLogBaseUrl));
+    }
+
+    public string DisplayCentralLogFolder => ResolveCentralLogFolder();
+
+    private static string ResolveCentralLogFolder()
+    {
+        string? dir = AppContext.BaseDirectory;
+        for (int i = 0; i < 10 && !string.IsNullOrEmpty(dir); i++)
+        {
+            string candidate = Path.Combine(dir, "central-logs");
+            if (Directory.Exists(candidate))
+                return Path.GetFullPath(candidate);
+            dir = Directory.GetParent(dir)?.FullName;
+        }
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "Pictures",
+            "EasySave-ConsoleStrategy",
+            "central-logs");
+    }
+
     private string _customEncryptionExtensionInput = "";
     public string CustomEncryptionExtensionInput
     {
@@ -376,6 +461,39 @@ public partial class MainViewModel
 
     private void RefreshLogPreview()
     {
+        if (string.Equals(_settings.LogDestination, "Central", StringComparison.OrdinalIgnoreCase))
+        {
+            string centralDir = DisplayCentralLogFolder;
+            string ndjson = Path.Combine(centralDir, DateTime.UtcNow.ToString("yyyy-MM-dd") + ".ndjson");
+            _displayLogFilePath = File.Exists(ndjson) ? ndjson : centralDir;
+            OnPropertyChanged(nameof(DisplayLogFilePath));
+
+            if (File.Exists(ndjson))
+            {
+                try
+                {
+                    string[] lines = File.ReadAllLines(ndjson);
+                    int take = Math.Min(25, lines.Length);
+                    LogPreview = string.Join(Environment.NewLine, lines.Skip(Math.Max(0, lines.Length - take)));
+                }
+                catch
+                {
+                    LogPreview = IsFrench
+                        ? $"Fichier central : {ndjson}"
+                        : $"Central file: {ndjson}";
+                }
+            }
+            else
+            {
+                LogPreview = IsFrench
+                    ? $"Mode Central — pas encore de fichier ici :{Environment.NewLine}{ndjson}{Environment.NewLine}{Environment.NewLine}1) docker compose up -d{Environment.NewLine}2) URL : http://localhost:5088{Environment.NewLine}3) Lancez une sauvegarde puis Rafraîchir."
+                    : $"Central mode — no file yet at:{Environment.NewLine}{ndjson}{Environment.NewLine}{Environment.NewLine}1) docker compose up -d{Environment.NewLine}2) URL: http://localhost:5088{Environment.NewLine}3) Run a backup, then Refresh.";
+            }
+
+            OnPropertyChanged(nameof(HasLogPreview));
+            return;
+        }
+
         string extension = IsLogFormatJson ? ".json" : ".xml";
         _displayLogFilePath = "";
         OnPropertyChanged(nameof(DisplayLogFilePath));

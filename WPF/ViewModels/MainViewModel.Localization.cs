@@ -68,6 +68,10 @@ public partial class MainViewModel
     public string LblSettingsLogsPreview => _lang.GetString("wpf_settings_logs_preview");
     public string LblSettingsLogsRefresh => _lang.GetString("wpf_settings_logs_refresh");
     public string LblSettingsOpenLogsFolder => _lang.GetString("wpf_settings_open_logs_folder");
+    public string LblSettingsSectionLogRouting => _lang.GetString("wpf_settings_section_log_routing");
+    public string LblSettingsLogDestination => _lang.GetString("wpf_settings_log_destination");
+    public string LblSettingsCentralLogUrl => _lang.GetString("wpf_settings_central_log_url");
+    public string LblSettingsCentralLogHint => _lang.GetString("wpf_settings_central_log_hint");
     public string LblSettingsSectionBusinessSoftware => _lang.GetString("wpf_settings_section_business_software");
     public string LblSettingsBusinessSoftwareLabel => _lang.GetString("wpf_settings_business_software_label");
     public string LblSettingsBusinessSoftwareHint => _lang.GetString("wpf_settings_business_software_hint");
@@ -120,7 +124,9 @@ public partial class MainViewModel
             nameof(LblSettingsTitle), nameof(LblSettingsSubtitle), nameof(LblSettingsSectionDisplay), nameof(LblSettingsPageSize),
             nameof(LblSettingsPageSizeHint), nameof(LblSettingsSectionData), nameof(LblSettingsDataFolder),
             nameof(LblSettingsWorksFile), nameof(LblSettingsLogsFile), nameof(LblSettingsLogsPreview), nameof(LblSettingsLogsRefresh),
-            nameof(LblSettingsOpenLogsFolder), nameof(LblSettingsSectionBusinessSoftware), nameof(LblSettingsBusinessSoftwareLabel),
+            nameof(LblSettingsOpenLogsFolder), nameof(LblSettingsSectionLogRouting), nameof(LblSettingsLogDestination),
+            nameof(LblSettingsCentralLogUrl), nameof(LblSettingsCentralLogHint),
+            nameof(LblSettingsSectionBusinessSoftware), nameof(LblSettingsBusinessSoftwareLabel),
             nameof(LblSettingsBusinessSoftwareHint), nameof(LblSettingsBusinessSoftwareAddButton), nameof(LblSettingsBusinessSoftwareList),
             nameof(LblSettingsBusinessSoftwareResetDefaults), nameof(LblSettingsBusinessSoftwareClearAll), nameof(LblSettingsBusinessSoftwareEmpty),
             nameof(LblSettingsSectionPriority), nameof(LblSettingsPriorityExtensions), nameof(LblSettingsPrioritySelected),
