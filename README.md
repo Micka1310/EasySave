@@ -4,7 +4,7 @@
 - [Vision globale](#vision-globale)
 - [Contexte et problématique](#contexte-et-problématique)
 - [Fonctionnalités attendues par version](#fonctionnalités-attendues-par-version)
-- [Bonne pratique de développement appliquer](#Bonne-pratique-de-développement-appliquer)
+- [Bonne pratique de développement appliquer](#bonne-pratique-de-développement-appliquer)
 - [Pipeline de développement du dépôt en ligne](#pipeline-de-développement-du-dépôt-en-ligne)
 - [Quelque commandes utiles durant le développement](#quelque-commandes-utiles-durant-le-développement)
 - [Livrables divers à rendre](#livrables-divers-à-rendre)
@@ -45,17 +45,18 @@ Le projet doit aussi répondre à ces contraintes de qualité :
 Cela nous permettra aussi de réagir rapidement à la remontée éventuelle d'un dysfonctionnement.
 Plusieurs versions sont donc développer pour ce projet.
 
+# Technologies utilisées
+
+- **Visual Studio** : Éditeur de code qui permet facilement de créer des applications bureautique, mobile ainsi que des services web. Natif avec le framewok .NET 10
+- **Language utilisé** : C#
+- **Framework de programmation logiciel utilisé** : .NET 10 ou plus
+- **Moteur de test** : MSTest
+- **Framework utilisé pour l'affichage graphique** : WPF
+- **Pour la simulation de serveurs** : Docker
+
 # Fonctionnalités attendues par version
 
 ## v1.0 - Application console
-
-### Technologies utilisées
-
-Language utilisé : C#
-
-Framework de programmation logiciel utilisé : .NET 8 ou plus
-
-Moteur de test : MSTest
 
 ### Fonctions metier
 
@@ -104,19 +105,6 @@ La **v1** de l'application doit comprendre :
   - le fichier source en cours
   - le fichier destination en cours
   - en format JSON lisible (retours ligne/indentation)
- 
-### Architecture logique de l'application
-
-À partir de la racine du projet, nous avons :
-\\\\\\ À Compléter \\\\\
-
-### Quelques modifications supplémentaire concernant cette version
-
-- Des dictionnaires sont utilisé pour changer la langue
-- Les travaux sont sauvegarder et conservé même lorsque l'application s'éteint grâce à un fichier JSON "works.json"
-- Ajout d'une option "Supprimer un travail" et "Exit / Quitter" pour une meilleure expérience utilisateur
-- Ajout d'une variable "Success" vérifiant pour chaque action si le transfert d'un fichier spécifique à été réussis depuis le fichier log
-\\\\\ À compléter \\\\\
 
 ## v1.1 - Application Console (retro-compatible avec la v1.0)
 
@@ -131,24 +119,9 @@ Tous les préréquis de la **v1.0** conservés.
 La **v1.1** de lapplication a comme nouveauté :
 - la possibilité de choisir le format du log journalier : **JSON ou XML**
 
-### Architecture logique de lapplication
-
-À partir de la racine du projet, nous avons :
-\\\\\\ À Compléter \\\\\
-
 ## v2.0 - Application graphique
 
 À partir de la v2, l'application passe dun **affichage console** à un **affichage graphique**.
-
-### Technologies utilisées
-
-Language utilisé : C#
-
-Framework de programmation logiciel utilisé : .NET 8 ou plus
-
-Moteur de test pour les tests unitaires : MSTest
-
-Framework utilisé pour l'affichage graphique : WPF
 
 ### Changement apporté
 
@@ -167,22 +140,9 @@ Le passage de la **v1.1** à la **v2.0** implique :
   - si une sauvegarde de séquence est déjà lancée, on termine le fichier en cours puis on arrête les prochaines sauvegarde
 - des commandes Play/Pause/Stop par travail sont demandees par les clients (non fonctionelle pour l'instant) pour la préparation à la **v3**
 
-### Architecture logique de l'application
-
-À partir de la racine du projet, nous avons :
-\\\\\\ À Compléter \\\\\
-
-### Quelques modifications supplémentaire concernant cette version
-
-\\\\\ À compléter \\\\\
-
 ## v3.0 - Application graphique avancée
 
 Amélioration de l'application graphique avec gestion de processus intégré et isolation avec Docker.
-
-### Technologies utilisées
-
-Similaire à la **v2**
 
 ### Changement apporté
 
@@ -208,14 +168,48 @@ Le passage de la **v2.0** à la **v3.0** implique :
   - local + centralise
 - qu'un seul et unique fichier journalier doit existé
 
-### Architecture logique de l'application
+# Quelques modifications supplémentaire ajouté pour l'application
 
-À partir de la racine du projet, nous avons :
-\\\\\\ À Compléter \\\\\
+- Les travaux sont conservés même lorsque l'application s'éteint grâce à un fichier JSON nommé « work.json » depuis le chemin suivant : *"C:\Users\Nom_Utilisateur\AppData\Roaming\EasySave\"*
+- Nous avons ajouté une option **"Supprimer un travail"** pour permettre à l’utilisateur de supprimer un travail qu’il n’a plus besoins. En particulier très utile pour la **version 1.0** de l’application du fait que nous n’avons le droit de conservé que **5 travaux au maximum**.
+- La navigation du menu de l’application se fait avec des **flèches directionnelles**. Pour choisir une option ou valider une saisie, il faut appuyer sur la touche « `enter` ». Il est aussi possible de revenir en arrière en appuyant sur le bouton « `echap` ».
+- Nous avons ajouté une option "*Exit / Quitter*" pour une meilleur expérience utilisateur.
+- Nous avons ajouté une variable "*Success*" vérifiant pour chaque action si le transfert d'un fichier spécifique a été réussis depuis le **fichier log**.
+- Nous avons ajouté un moyen de consulter plus facilement le **fichier log** pour que l’utilisateur n’ai pas à consulter manuellement le fichier journalier (c’est-à-dire, se diriger vers le chemin où se trouve le fichier journalier) en l’ouvrant par lui-même. Cette fonctionnalité est disponible depuis la section « *paramètre* ».
+- La **version 2.0** intègre une **pagination** de la liste des travaux pour améliorer la lisibilité quand leur nombre devient important. L’utilisateur peut ainsi naviguer entre les pages (précédente/suivante). Il est possible de choisir le nombre d’éléments affichés par page depuis la section « *Paramètres* ».
+- Nous avons ajouté la possibilité de changer l’affichage visuel entre **2 modes** :
+•	*Sombre*
+•	*Claire*
+Le bouton permettant de choisir le mode se trouve **au coin en haut à gauche** de l’application.
 
-### Quelques modifications supplémentaire concernant cette version
+# Architecture logique de l'application
 
-\\\\\ À compléter \\\\\
+À partir de la racine, voici la structure générale disponible pour **toutes les versions** :
+- Dossier « */EasyLog* » : Contient le code pour gérer la création et l’écriture du fichier log et état. Le code contenu dans ce dossier est réutilisable pour toutes les versions de l’application. Ce sont des codes qui serviront uniquement de librairie et sont donc réutilisable pour d’autre parties de codes.
+- Dossier « */Lib* » : Contient la partie Model qui est réutilisable pour toutes les versions de l’application. Le code concerne le langage et les travaux.
+- Dossier « */CryptoSoft/CryptoEngine.cs* » : Contient le moteur de chiffrement utilisé sur les fichiers ciblés sous forme de code.
+- Dossier « */CryptoSoft* » : contient l’exécutable externe de chiffrement appelé par EasySave pendant la sauvegarde.
+
+À partir de la racine, voici la structure de la **version 1.0** :
+- Dossier « */Console* » : Contient tout le code lié spécifiquement à la version 1.0 de l’application en mode console.
+- Dossier « */Console/View* » : Contient tout le code concernant la partie View. Le code concerne l’affichage console.
+- Dossier « *Console/ViewModel* » : Contient tout le code concernant la partie ViewModel. Le code concerne le contrôleur ainsi que les différents options (Design pattern de stratégie).
+
+À partir de la racine, voici la structure de la **version 1.1** :
+- Fichier « */Console/ViewModel/Strategy/ChangeLogFormat6.cs* » : Contient tout le code permettant de changer le format du fichier journalier.
+
+À partir de la racine, voici la structure de la **version 2.0** :
+- Dossier « */WPF* » : contient tout le code de la version graphique (interface, logique MVVM, paramètres, pagination, logiciel métier).
+- Dossier « */WPF/Views* » : contient la partie affichage (fenêtre principale et boîte de dialogue de création).
+- Dossier « */WPF/ViewModels* » : contient la logique applicative côté interface (commandes, exécution des sauvegardes, état, localisation).
+- Dossier « */WPF/Services* » : contient les services techniques, notamment la gestion des paramètres généraux.
+- Dossier « */WPF/Helpers* » : contient les helpers (convertisseurs et utilitaires de binding) utilisés par l’interface.
+- Dossier « */WPF/Themes* » : contient les styles et couleurs de l’interface.
+
+Quant à la structure de la **version 3.0**, elle sera similaire (à partir de la racine) à celle de la version 2.0 avec ces ajouts supplémentaires :
+- Dossier « *LogCentral* » : contient le code pour simuler la connexion à un serveur (Docker)
+- Dossier « *central-logs* » : permet de stocker le fichier journalier qui sera copié vers le serveur lors de la simulation pour la centralisation de celle-ci.
+
 
 # Bonne pratique de développement appliquer
 
@@ -249,7 +243,9 @@ La pipeline de développement durant le projet se déroule de cette façon :
 En résumé, lorsque aucune erreur n'a été détécté après qu'un développeur partage sa branche dans le dépôt en ligne, la **pipeline** permet durant le développement qu'à chaque modification de code, la mise à jour du code suit ce chemin de versionning :
 `branche du développeur` -> `production` -> `main`
 
-# Quelques commandes utiles durant le développement
+Enfin, nous avons décidé de créer une **branche spécifique (v1, V1.1, v2, V3)** pour chaque version de l’application afin de garder le code de celles-ci.
+
+# Quelque commandes utiles durant le développement
 
 **Lignes de commandes** à utiliser depuis un **terminal** lors du développement de l'application :
 ```bash
@@ -263,5 +259,5 @@ dotnet test --filter "FullyQualifiedName~Namespace.NomDeClasse.NomDeMéthode"   
 # Livrables divers à rendre
 
 D'autres éléments de livrables seront aussi rendu séparément à savoir :
-- un **UML** pour chaque version de l'application
-- un **manuel utilisateur (1 page)** à la fin du développement de l'application
+- un **UML (diagramme de classe + séquence)** pour chaque version de l'application
+- un **manuel utilisateur (environ 3-4 pages)** à la fin du développement de l'application
