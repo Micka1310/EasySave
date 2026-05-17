@@ -18,8 +18,6 @@ public partial class MainViewModel
 
     private async Task MonitorBusinessSoftwareAsync(
         WorkItemViewModel vm,
-        Func<bool> getPauseRequested,
-        Action<bool> setPauseRequested,
         CancellationToken token)
     {
         bool loggedCurrentDetection = false;
@@ -27,12 +25,14 @@ public partial class MainViewModel
         {
             if (TryGetRunningBusinessSoftware(out string processName))
             {
-                if (!getPauseRequested())
+                if (!vm.PausedByBusinessSoftware)
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        setPauseRequested(true);
-                        vm.StatusKey = "Paused";
+                        vm.PausedByBusinessSoftware = true;
+                        vm.PauseRequested = true;
+                        if (vm.StatusKey != "Paused")
+                            vm.StatusKey = "Paused";
                         ShowBanner($"{_lang.GetString("wpf_business_software_pause")} ({processName})", "warning");
                     });
                 }
@@ -45,13 +45,17 @@ public partial class MainViewModel
             }
             else
             {
-                if (getPauseRequested())
+                if (vm.PausedByBusinessSoftware)
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        setPauseRequested(false);
-                        vm.StatusKey = "Active";
-                        ShowBanner(_lang.GetString("wpf_business_software_resume"), "info");
+                        vm.PausedByBusinessSoftware = false;
+                        if (!vm.PausedByUser)
+                        {
+                            vm.PauseRequested = false;
+                            vm.StatusKey = "Active";
+                            ShowBanner(_lang.GetString("wpf_business_software_resume"), "info");
+                        }
                     });
                 }
 

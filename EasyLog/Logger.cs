@@ -42,6 +42,8 @@ public class Logger : ILogger
 
     public void WriteLogs(string workName, string sourceFile, string destinationFile, long fileSize, long transferTimeMs, long encryptionTimeMs = 0, bool success = true, string errorMessage = "")
     {
+        LogRoutingConfig routing = CentralLogRouting.Load();
+
         LogEntry entry = new LogEntry
         {
             Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -55,17 +57,23 @@ public class Logger : ILogger
             ErrorMessage = errorMessage
         };
 
-        string ext = LogFormatSettings.Current == LogFormat.Xml ? ".xml" : ".json";
-        string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ext;
-        string filePath = Path.Combine(logDirectory, fileName);
-
-        lock (FileLock)
+        if (routing.WriteLocal)
         {
-            if (LogFormatSettings.Current == LogFormat.Xml)
-                AppendXml(filePath, entry);
-            else
-                AppendJson(filePath, entry);
+            string ext = LogFormatSettings.Current == LogFormat.Xml ? ".xml" : ".json";
+            string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ext;
+            string filePath = Path.Combine(logDirectory, fileName);
+
+            lock (FileLock)
+            {
+                if (LogFormatSettings.Current == LogFormat.Xml)
+                    AppendXml(filePath, entry);
+                else
+                    AppendJson(filePath, entry);
+            }
         }
+
+        if (routing.WriteCentral)
+            CentralLogSender.TrySendInBackground(entry, routing.CentralBaseUrl);
     }
 
     private static void AppendJson(string filePath, LogEntry entry)

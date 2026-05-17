@@ -40,6 +40,25 @@ public sealed class GeneralSettingsService
 public sealed class GeneralSettings
 {
     public List<string> EncryptedExtensions { get; set; } = [];
+    public List<string> PriorityExtensions { get; set; } = [];
     public string LogFormat { get; set; } = "json";
     public List<string> BusinessSoftwareNames { get; set; } = [];
+
+    // Taille (en Ko) au-dessus de laquelle deux fichiers ne peuvent pas être
+    // transférés simultanément par des travaux parallèles. 0 = règle désactivée.
+    public int LargeFileThresholdKB { get; set; } = 0;
+
+    // Unité préférée pour l'affichage dans l'UI ("KB", "MB", "GB"). Le stockage
+    // canonique reste LargeFileThresholdKB ; cette unité n'est qu'un détail
+    // d'affichage pour ne pas perdre la préférence utilisateur.
+    public string LargeFileThresholdUnit { get; set; } = "KB";
+
+    /// <summary>Local | Central | Both</summary>
+    public string LogDestination { get; set; } = "Local";
+
+    /// <summary>URL du service LogCentral (ex. http://localhost:5088)</summary>
+    public string CentralLogBaseUrl { get; set; } = "http://localhost:5088";
+
+    /// <summary>Dark | Light</summary>
+    public string AppTheme { get; set; } = "Dark";
 }

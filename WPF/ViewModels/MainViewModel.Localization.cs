@@ -21,9 +21,16 @@ public partial class MainViewModel
     public string LblPrimaryHeader => ShowWorksPanel ? LblHeader : LblSettingsTitle;
     public string LblPrimarySubtitle => ShowWorksPanel ? LblCount : LblSettingsSubtitle;
     public string LblAppTitle => "EasySave";
-    public string LblAppSubtitle => IsFrench ? "Outil de sauvegarde — v2" : "Backup tool — v2";
+    public string LblAppSubtitle => IsFrench ? "Suite de sauvegarde professionnelle — v3" : "Professional backup suite — v3";
+    public string LblVersionBadge => "v3.0";
+    public string LblHeroTitle => IsFrench ? "Centre de contrôle" : "Control center";
     public string LblSectionMenu => _lang.GetString("wpf_section_menu");
     public string LblSectionLanguage => _lang.GetString("wpf_section_language");
+    public string LblSectionTheme => _lang.GetString("wpf_section_theme");
+    public string LblThemeDark => _lang.GetString("wpf_theme_dark");
+    public string LblThemeLight => _lang.GetString("wpf_theme_light");
+    public string LblSettingsTheme => _lang.GetString("wpf_settings_theme");
+    public string LblSettingsThemeHint => _lang.GetString("wpf_settings_theme_hint");
     public string LblNavWorks => IsFrench ? "Travaux" : "Jobs";
     public string LblNavSettings => IsFrench ? "Paramètres" : "Settings";
     public string LblHeader => IsFrench ? "Mes travaux de sauvegarde" : "My backup jobs";
@@ -68,6 +75,10 @@ public partial class MainViewModel
     public string LblSettingsLogsPreview => _lang.GetString("wpf_settings_logs_preview");
     public string LblSettingsLogsRefresh => _lang.GetString("wpf_settings_logs_refresh");
     public string LblSettingsOpenLogsFolder => _lang.GetString("wpf_settings_open_logs_folder");
+    public string LblSettingsSectionLogRouting => _lang.GetString("wpf_settings_section_log_routing");
+    public string LblSettingsLogDestination => _lang.GetString("wpf_settings_log_destination");
+    public string LblSettingsCentralLogUrl => _lang.GetString("wpf_settings_central_log_url");
+    public string LblSettingsCentralLogHint => _lang.GetString("wpf_settings_central_log_hint");
     public string LblSettingsSectionBusinessSoftware => _lang.GetString("wpf_settings_section_business_software");
     public string LblSettingsBusinessSoftwareLabel => _lang.GetString("wpf_settings_business_software_label");
     public string LblSettingsBusinessSoftwareHint => _lang.GetString("wpf_settings_business_software_hint");
@@ -76,6 +87,17 @@ public partial class MainViewModel
     public string LblSettingsBusinessSoftwareResetDefaults => _lang.GetString("wpf_settings_business_software_reset_defaults");
     public string LblSettingsBusinessSoftwareClearAll => _lang.GetString("wpf_settings_business_software_clear_all");
     public string LblSettingsBusinessSoftwareEmpty => _lang.GetString("wpf_settings_business_software_empty");
+    public string LblSettingsSectionPriority => _lang.GetString("wpf_settings_section_priority");
+    public string LblSettingsPriorityExtensions => _lang.GetString("wpf_settings_priority_extensions");
+    public string LblSettingsPrioritySelected => _lang.GetString("wpf_settings_priority_selected");
+    public string LblSettingsPriorityAdd => _lang.GetString("wpf_settings_priority_add");
+    public string LblSettingsPriorityAddButton => _lang.GetString("wpf_settings_priority_add_button");
+    public string LblSettingsPriorityHint => _lang.GetString("wpf_settings_priority_hint");
+    public string LblSettingsSectionBandwidth => _lang.GetString("wpf_settings_section_bandwidth");
+    public string LblSettingsBandwidthThreshold => _lang.GetString("wpf_settings_bandwidth_threshold");
+    public string LblSettingsBandwidthThresholdUnit => _lang.GetString("wpf_settings_bandwidth_threshold_unit");
+    public string LblSettingsBandwidthHint => _lang.GetString("wpf_settings_bandwidth_hint");
+    public string LblSettingsBandwidthDisabled => _lang.GetString("wpf_settings_bandwidth_disabled");
     public string LblSettingsSectionEncryption => _lang.GetString("wpf_settings_section_encryption");
     public string LblSettingsEncryptionExtensions => _lang.GetString("wpf_settings_encryption_extensions");
     public string LblSettingsEncryptionSelected => _lang.GetString("wpf_settings_encryption_selected");
@@ -87,12 +109,22 @@ public partial class MainViewModel
     public string LblSettingsAboutBody => _lang.GetString("wpf_settings_about_body");
     public string LblPagePrev => _lang.GetString("wpf_page_prev");
     public string LblPageNext => _lang.GetString("wpf_page_next");
+    public string LblPause => _lang.GetString("wpf_pause");
+    public string LblResume => _lang.GetString("wpf_resume");
+    public string LblStop => _lang.GetString("wpf_stop");
+    public string LblPauseAll => IsFrench ? "Tout mettre en pause" : "Pause all";
+    public string LblResumeAll => IsFrench ? "Tout reprendre" : "Resume all";
+    public string LblStopAll => IsFrench ? "Tout arrêter" : "Stop all";
 
     private void NotifyAllLabels()
     {
         string[] labels =
         [
-            nameof(LblAppSubtitle), nameof(LblSectionMenu), nameof(LblSectionLanguage), nameof(LblSectionLogFormat),
+            nameof(LblAppSubtitle), nameof(LblVersionBadge), nameof(LblHeroTitle),
+            nameof(LblSectionMenu), nameof(LblSectionLanguage), nameof(LblSectionTheme),
+            nameof(LblThemeDark), nameof(LblThemeLight), nameof(LblSettingsTheme), nameof(LblSettingsThemeHint),
+            nameof(ThemeToggleGlyph), nameof(ThemeToggleToolTip),
+            nameof(LblSectionLogFormat),
             nameof(LblLogJson), nameof(LblLogXml), nameof(LblNavWorks), nameof(LblNavSettings), nameof(LblHeader),
             nameof(LblCount), nameof(LblPrimaryHeader), nameof(LblPrimarySubtitle), nameof(LblNew),
             nameof(LblRunSelected), nameof(LblRunAll), nameof(LblEmptyTitle), nameof(LblEmptySubtitle),
@@ -103,13 +135,21 @@ public partial class MainViewModel
             nameof(LblSettingsTitle), nameof(LblSettingsSubtitle), nameof(LblSettingsSectionDisplay), nameof(LblSettingsPageSize),
             nameof(LblSettingsPageSizeHint), nameof(LblSettingsSectionData), nameof(LblSettingsDataFolder),
             nameof(LblSettingsWorksFile), nameof(LblSettingsLogsFile), nameof(LblSettingsLogsPreview), nameof(LblSettingsLogsRefresh),
-            nameof(LblSettingsOpenLogsFolder), nameof(LblSettingsSectionBusinessSoftware), nameof(LblSettingsBusinessSoftwareLabel),
+            nameof(LblSettingsOpenLogsFolder), nameof(LblSettingsSectionLogRouting), nameof(LblSettingsLogDestination),
+            nameof(LblSettingsCentralLogUrl), nameof(LblSettingsCentralLogHint),
+            nameof(LblSettingsSectionBusinessSoftware), nameof(LblSettingsBusinessSoftwareLabel),
             nameof(LblSettingsBusinessSoftwareHint), nameof(LblSettingsBusinessSoftwareAddButton), nameof(LblSettingsBusinessSoftwareList),
             nameof(LblSettingsBusinessSoftwareResetDefaults), nameof(LblSettingsBusinessSoftwareClearAll), nameof(LblSettingsBusinessSoftwareEmpty),
+            nameof(LblSettingsSectionPriority), nameof(LblSettingsPriorityExtensions), nameof(LblSettingsPrioritySelected),
+            nameof(LblSettingsPriorityAdd), nameof(LblSettingsPriorityAddButton), nameof(LblSettingsPriorityHint),
+            nameof(LblSettingsSectionBandwidth), nameof(LblSettingsBandwidthThreshold), nameof(LblSettingsBandwidthThresholdUnit),
+            nameof(LblSettingsBandwidthHint), nameof(LblSettingsBandwidthDisabled), nameof(LargeFileThresholdSummary),
             nameof(LblSettingsSectionEncryption), nameof(LblSettingsEncryptionExtensions), nameof(LblSettingsEncryptionSelected),
             nameof(LblSettingsEncryptionAdd), nameof(LblSettingsEncryptionAddButton), nameof(LblSettingsEncryptionHint),
             nameof(LblSettingsCryptoSoftFolder), nameof(LblSettingsSectionAbout), nameof(LblSettingsAboutBody),
-            nameof(LblPagePrev), nameof(LblPageNext), nameof(LblPaginationDetail), nameof(LblPaginationPages)
+            nameof(LblPagePrev), nameof(LblPageNext), nameof(LblPaginationDetail), nameof(LblPaginationPages),
+            nameof(LblPause), nameof(LblResume), nameof(LblStop),
+            nameof(LblPauseAll), nameof(LblResumeAll), nameof(LblStopAll)
         ];
 
         foreach (string label in labels)

@@ -1,0 +1,81 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- EasySave v3 — thème clair -->
+    <Color x:Key="BackgroundColor">#EEF1FA</Color>
+    <Color x:Key="BackgroundAltColor">#E4E9F6</Color>
+    <Color x:Key="SurfaceColor">#FFFFFF</Color>
+    <Color x:Key="SurfaceElevatedColor">#F8FAFF</Color>
+    <Color x:Key="SurfaceHoverColor">#E8EDFB</Color>
+    <Color x:Key="BorderColor">#C8D0E8</Color>
+    <Color x:Key="BorderGlowColor">#94A8E0</Color>
+
+    <Color x:Key="AccentColor">#0284C7</Color>
+    <Color x:Key="AccentDarkColor">#0369A1</Color>
+    <Color x:Key="AccentSoftColor">#BAE6FD</Color>
+    <Color x:Key="SecondaryAccentColor">#7C3AED</Color>
+    <Color x:Key="TertiaryAccentColor">#DB2777</Color>
+
+    <Color x:Key="SuccessColor">#15803D</Color>
+    <Color x:Key="WarningColor">#B45309</Color>
+    <Color x:Key="ErrorColor">#BE123C</Color>
+
+    <Color x:Key="TextPrimaryColor">#0F172A</Color>
+    <Color x:Key="TextSecondaryColor">#475569</Color>
+    <Color x:Key="TextMutedColor">#94A3B8</Color>
+
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}" />
+    <SolidColorBrush x:Key="BackgroundAltBrush" Color="{StaticResource BackgroundAltColor}" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{StaticResource SurfaceElevatedColor}" />
+    <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{StaticResource SurfaceHoverColor}" />
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
+    <SolidColorBrush x:Key="BorderGlowBrush" Color="{StaticResource BorderGlowColor}" />
+
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentDarkBrush" Color="{StaticResource AccentDarkColor}" />
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="{StaticResource AccentSoftColor}" />
+    <SolidColorBrush x:Key="SecondaryAccentBrush" Color="{StaticResource SecondaryAccentColor}" />
+    <SolidColorBrush x:Key="TertiaryAccentBrush" Color="{StaticResource TertiaryAccentColor}" />
+
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
+
+    <LinearGradientBrush x:Key="SidebarGradientBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#F8FAFF" Offset="0" />
+        <GradientStop Color="#E8EDF8" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PrimaryButtonGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#38BDF8" Offset="0" />
+        <GradientStop Color="#818CF8" Offset="0.55" />
+        <GradientStop Color="#F472B6" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="HeroGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#DBEAFE" Offset="0" />
+        <GradientStop Color="#EDE9FE" Offset="0.45" />
+        <GradientStop Color="#E0F2FE" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="MainCanvasGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#EEF1FA" Offset="0" />
+        <GradientStop Color="#F4F6FC" Offset="0.5" />
+        <GradientStop Color="#E8EDF8" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="AccentLineGradient" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#0284C7" Offset="0" />
+        <GradientStop Color="#7C3AED" Offset="1" />
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="HeroOverlayBrush" Color="#18000000" />
+    <SolidColorBrush x:Key="GlassFillBrush" Color="#40FFFFFF" />
+
+</ResourceDictionary>

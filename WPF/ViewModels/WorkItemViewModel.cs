@@ -1,12 +1,10 @@
+using System.Windows.Input;
 using EasyLog;
 using LanguageFile;
 using WorkFile;
 
 namespace EasySave.WPF.ViewModels;
 
-/// <summary>
-/// Wrapper observable d'un Work : expose la progression en temps réel pour le binding XAML.
-/// </summary>
 public class WorkItemViewModel : ViewModelBase
 {
     public Work Work { get; }
@@ -25,19 +23,59 @@ public class WorkItemViewModel : ViewModelBase
     public bool IsFullBackup => TypeRaw == "1";
 
     private string _statusKey = "Inactive";
-    /// <summary>Valeur technique (Active, Inactive, Done, Error, Idle) pour les couleurs.</summary>
     public string StatusKey
     {
         get => _statusKey;
         set
         {
             if (SetField(ref _statusKey, value))
+            {
                 OnPropertyChanged(nameof(StatusDisplay));
+                OnPropertyChanged(nameof(CanPause));
+                OnPropertyChanged(nameof(CanResume));
+                OnPropertyChanged(nameof(CanStop));
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
     }
 
-    /// <summary>Libellé affiché selon la langue courante.</summary>
     public string StatusDisplay => LocalizeStatus(_statusKey);
+    public bool CanPause => _statusKey == "Active";
+    public bool CanResume => _statusKey == "Paused" && !_pausedByBusinessSoftware;
+    public bool CanStop => _statusKey is "Active" or "Paused";
+
+    private volatile bool _pauseRequested;
+    public bool PauseRequested
+    {
+        get => _pauseRequested;
+        set => _pauseRequested = value;
+    }
+
+    private volatile bool _pausedByUser;
+    public bool PausedByUser => _pausedByUser;
+
+    private volatile bool _pausedByBusinessSoftware;
+    public bool PausedByBusinessSoftware
+    {
+        get => _pausedByBusinessSoftware;
+        set
+        {
+            _pausedByBusinessSoftware = value;
+            OnPropertyChanged(nameof(CanResume));
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }
+
+    private CancellationTokenSource? _cts;
+    public CancellationTokenSource? Cts
+    {
+        get => _cts;
+        set => _cts = value;
+    }
+
+    public ICommand PauseCommand { get; }
+    public ICommand ResumeCommand { get; }
+    public ICommand StopCommand { get; }
 
     private int _progression;
     public int Progression
@@ -87,6 +125,33 @@ public class WorkItemViewModel : ViewModelBase
     public WorkItemViewModel(Work work)
     {
         Work = work;
+        PauseCommand = new RelayCommand(_ => RequestPause(), _ => CanPause);
+        ResumeCommand = new RelayCommand(_ => RequestResume(), _ => CanResume);
+        StopCommand = new RelayCommand(_ => RequestStop(), _ => CanStop);
+    }
+
+    public void RequestPause()
+    {
+        _pausedByUser = true;
+        _pauseRequested = true;
+        StatusKey = "Paused";
+    }
+
+    public void RequestResume()
+    {
+        _pausedByUser = false;
+        _pausedByBusinessSoftware = false;
+        _pauseRequested = false;
+        StatusKey = "Active";
+    }
+
+    public void RequestStop()
+    {
+        _pausedByUser = false;
+        _pausedByBusinessSoftware = false;
+        _pauseRequested = false;
+        _cts?.Cancel();
+        StatusKey = "Cancelled";
     }
 
     public void RefreshLocalization()
@@ -98,6 +163,7 @@ public class WorkItemViewModel : ViewModelBase
 
     public void UpdateFromState(WorkState state)
     {
+        if (StatusKey is "Paused" or "Cancelled") return;
         StatusKey = state.Status;
         Progression = state.Progression;
         TotalFiles = state.TotalFiles;
@@ -109,6 +175,9 @@ public class WorkItemViewModel : ViewModelBase
 
     public void Reset()
     {
+        _pauseRequested = false;
+        _pausedByUser = false;
+        _pausedByBusinessSoftware = false;
         StatusKey = "Inactive";
         Progression = 0;
         TotalFiles = 0;
